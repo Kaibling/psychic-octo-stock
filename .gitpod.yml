@@ -1,0 +1,5 @@
+
+vscode:
+  extensions:
+    - golang.go
+    - alexcvzz.vscode-sqlite
