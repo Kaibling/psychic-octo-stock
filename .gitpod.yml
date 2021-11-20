@@ -3,3 +3,7 @@ vscode:
   extensions:
     - golang.go
     - alexcvzz.vscode-sqlite
+ports:
+  - port: 8080
+    onOpen: notify
+    visibility: public
