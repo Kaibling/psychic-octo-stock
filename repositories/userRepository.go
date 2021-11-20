@@ -1,6 +1,8 @@
 package repositories
 
 import (
+	"log"
+
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/lucsky/cuid"
@@ -17,7 +19,7 @@ func NewUserRepository(dbConn database.DBConnector) *UserRepository {
 func (s *UserRepository) AddUser(user *models.User) error {
 	user.ID = cuid.New()
 	if err := s.db.Add(&user); err != nil {
-		//log.Println(user.ID)
+		log.Println(err)
 		return err
 	}
 	return nil

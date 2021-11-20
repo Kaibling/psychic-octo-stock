@@ -13,7 +13,7 @@ func UserPost(c *gin.Context) {
 	newUser.Password = utility.HashPassword(newUser.Password)
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
 	if err := userRepo.AddUser(&newUser); err != nil {
-		c.JSON(500, models.Envelope{Data: "", Message: err.Error()})
+		c.JSON(422, models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
 	//todo proper return schema

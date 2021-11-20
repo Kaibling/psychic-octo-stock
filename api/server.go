@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/Kaibling/psychic-octo-stock/lib/config"
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
@@ -8,7 +9,9 @@ import (
 )
 
 func AssembleServer() *gin.Engine {
-	sdb := database.NewDatabaseConnector("local.db")
+	configData := config.NewConfig()
+	configData.LogEnv()
+	sdb := database.NewDatabaseConnector(configData.DBUrl)
 	sdb.Connect()
 	sdb.Migrate(&models.User{})
 

@@ -4,16 +4,16 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	ID       string `gorm:"primaryKey"`
-	Username string `json:"username"` //`gorm:"unique" json:"username"`
+	ID       string `gorm:"primaryKey;autoIncrement:false"`
+	Username string `gorm:"unique" json:"username"`
 	Password string `json:"password"`
-	Email    string `json:"email"` //`gorm:"unique" json:"email"`
+	Email    string `gorm:"unique" json:"email"`
 	Address  string `json:"address"`
 }
 
 type Stock struct {
 	gorm.Model
-	ID   string `gorm:"primaryKey"`
+	ID   string `gorm:"primaryKey;autoIncrement:false"`
 	Name string `gorm:"unique"`
 }
 

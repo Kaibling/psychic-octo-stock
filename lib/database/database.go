@@ -40,12 +40,8 @@ func (s *GormConnector) Migrate(object interface{}) error {
 }
 
 func (s *GormConnector) Add(object interface{}) error {
-	s.connector.Create(object)
 	if dbc := s.connector.Create(object); dbc.Error != nil {
-		//todo dafuq ????
-		if dbc.Error.Error() != "UNIQUE constraint failed: users.id" {
-			return dbc.Error
-		}
+		return dbc.Error
 	}
 	return nil
 }
