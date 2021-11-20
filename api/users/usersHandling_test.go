@@ -108,7 +108,17 @@ func TestUpdateUser(t *testing.T) {
 	assert.Equal(t, updateUser.Address, reponseUser["address"])
 
 }
+func TestUpdateNoneExistingUser(t *testing.T) {
+	r := api.AssembleServer()
+	userID := "thisdoesnotexists"
+	updateUser := models.User{
+		Address: "somethingNew",
+	}
+	updateByteUser, _ := json.Marshal(updateUser)
+	w := performRequest(r, "PUT", "/v1/users/"+userID, updateByteUser)
+	assert.Equal(t, http.StatusNotFound, w.Code)
 
+}
 func TestGetAllUser(t *testing.T) {
 	r := api.AssembleServer()
 	testUser := models.User{
@@ -180,4 +190,40 @@ func TestDeleteNoneExistingUser(t *testing.T) {
 	deleteResponse := performRequest(r, "DELETE", "/v1/users/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
+}
+
+func TestGetNoneExistingUser(t *testing.T) {
+	r := api.AssembleServer()
+	deleteResponse := performRequest(r, "GET", "/v1/users/adawfeefsse", nil)
+	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
+
+}
+func TestGetUser(t *testing.T) {
+	r := api.AssembleServer()
+	testUser := models.User{
+		Username: "Test3",
+		Email:    "abc3@abc.ac",
+		Password: "abc123",
+	}
+	byte_User, _ := json.Marshal(testUser)
+	w := performRequest(r, "POST", "/v1/users", byte_User)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var createResponse map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &createResponse)
+	value := createResponse["data"]
+	reponseUser := value.(map[string]interface{})
+	userID := reponseUser["ID"].(string)
+
+	getResponse := performRequest(r, "GET", "/v1/users/"+userID, nil)
+	assert.Equal(t, http.StatusOK, getResponse.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(getResponse.Body.Bytes(), &response)
+	assert.Nil(t, err)
+	value, exists := response["data"]
+	assert.True(t, exists)
+	//data empty
+	user := value.(map[string]interface{})
+	assert.Equal(t, user["email"], testUser.Email)
+	assert.Equal(t, user["username"], testUser.Username)
 }

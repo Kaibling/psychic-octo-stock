@@ -63,4 +63,14 @@ func userDelete(c *gin.Context) {
 	}
 	c.JSON(204, nil)
 }
-func userGet(c *gin.Context) {}
+func userGet(c *gin.Context) {
+	userID := c.Param("id")
+	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	loadedUser, err := userRepo.GetUserByID(userID)
+	if err != nil {
+		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		return
+	}
+	env := models.Envelope{Data: loadedUser, Message: ""}
+	c.JSON(200, env)
+}
