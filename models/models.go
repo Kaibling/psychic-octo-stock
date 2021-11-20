@@ -11,6 +11,8 @@ type User struct {
 	Address  string `json:"address"`
 }
 
+var UserSelect = []string{"ID", " Username", " Email", " Address"}
+
 type Stock struct {
 	gorm.Model
 	ID   string `gorm:"primaryKey;autoIncrement:false"`

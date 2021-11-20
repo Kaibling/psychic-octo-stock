@@ -3,7 +3,6 @@ package config
 import (
 	"log"
 	"os"
-	"path/filepath"
 )
 
 var OSPREFIX = "POS"
@@ -16,11 +15,11 @@ type Configuration struct {
 func NewConfig() *Configuration {
 	dbURL := os.Getenv(OSPREFIX + "_DBURL")
 	if dbURL == "" {
-		path, err := os.Getwd()
-		if err != nil {
-			log.Println(err)
-		}
-		dbURL = filepath.Join(path, "local.db")
+		// path, err := os.Getwd()
+		// if err != nil {
+		// 	log.Println(err)
+		// }
+		dbURL = "file::memory:" // filepath.Join(path, "local.db")
 	}
 	Config = &Configuration{DBUrl: dbURL}
 	return &Configuration{DBUrl: dbURL}

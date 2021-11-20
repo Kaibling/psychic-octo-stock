@@ -22,7 +22,25 @@ func UserPost(c *gin.Context) {
 
 	c.JSON(201, env)
 }
-func usersGet(c *gin.Context)   {}
-func usersPut(c *gin.Context)   {}
+func usersGet(c *gin.Context) {
+	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	userList := userRepo.GetAllUser()
+	env := models.Envelope{Data: userList, Message: ""}
+	c.JSON(200, env)
+}
+func usersPut(c *gin.Context) {
+	userID := c.Param("id")
+	var updateUser map[string]interface{}
+	c.BindJSON(&updateUser)
+
+	updateUser["ID"] = userID
+	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+
+	userRepo.UpdateWithMap(updateUser)
+	loadedUser := userRepo.GetUserByID(userID)
+	env := models.Envelope{Data: loadedUser, Message: ""}
+
+	c.JSON(200, env)
+}
 func userDelete(c *gin.Context) {}
 func userGet(c *gin.Context)    {}

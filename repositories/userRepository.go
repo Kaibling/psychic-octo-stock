@@ -27,11 +27,22 @@ func (s *UserRepository) AddUser(user *models.User) error {
 
 func (s *UserRepository) GetUserByID(id string) *models.User {
 	var object models.User
-	s.db.FindByID(&object, id)
+	s.db.FindByID(&object, id, models.UserSelect)
 	return &object
 
 }
-func (s *UserRepository) UpdateObject(user *models.User) error {
+func (s *UserRepository) UpdateWithObject(user *models.User) error {
 	s.db.UpdateByObject(user)
 	return nil
+}
+
+func (s *UserRepository) UpdateWithMap(data map[string]interface{}) error {
+	s.db.UpdateByMap(models.User{}, data)
+	return nil
+}
+
+func (s *UserRepository) GetAllUser() []*models.User {
+	var userList []*models.User
+	s.db.GetAll(&userList, models.UserSelect)
+	return userList
 }
