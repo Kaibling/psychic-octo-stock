@@ -151,3 +151,33 @@ func TestGetAllUser(t *testing.T) {
 	//userID := reponseUser["ID"].(string)
 
 }
+
+func TestDeleteUser(t *testing.T) {
+	r := api.AssembleServer()
+	testUser := models.User{
+		Username: "Test3",
+		Email:    "abc3@abc.ac",
+		Password: "abc123",
+	}
+	byte_User, _ := json.Marshal(testUser)
+	w := performRequest(r, "POST", "/v1/users", byte_User)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var response map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &response)
+	value := response["data"]
+	reponseUser := value.(map[string]interface{})
+	userID := reponseUser["ID"].(string)
+
+	deleteResponse := performRequest(r, "DELETE", "/v1/users/"+userID, nil)
+	assert.Equal(t, http.StatusNoContent, deleteResponse.Code)
+
+	deleteResponse = performRequest(r, "DELETE", "/v1/users/"+userID, nil)
+	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
+}
+
+func TestDeleteNoneExistingUser(t *testing.T) {
+	r := api.AssembleServer()
+	deleteResponse := performRequest(r, "DELETE", "/v1/users/adawfeefsse", nil)
+	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
+
+}

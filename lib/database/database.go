@@ -1,20 +1,23 @@
 package database
 
 import (
-	"errors"
+	"fmt"
+	"strings"
 
+	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 type DBConnector interface {
-	Connect() error
-	Migrate(interface{}) error
-	Add(interface{}) error
-	FindByID(object interface{}, id string, selectString []string) error
-	UpdateByObject(data interface{}) error
-	UpdateByMap(model interface{}, data map[string]interface{}) error
-	GetAll(data interface{}, selectString []string) error
+	Connect() apierrors.ApiError
+	Migrate(interface{}) apierrors.ApiError
+	Add(interface{}) apierrors.ApiError
+	FindByID(object interface{}, id string, selectString []string) apierrors.ApiError
+	UpdateByObject(data interface{}) apierrors.ApiError
+	UpdateByMap(model interface{}, data map[string]interface{}) apierrors.ApiError
+	GetAll(data interface{}, selectString []string) apierrors.ApiError
+	DeleteByID(model interface{}) apierrors.ApiError
 }
 
 type GormConnector struct {
@@ -26,45 +29,65 @@ func NewDatabaseConnector(url string) *GormConnector {
 	return &GormConnector{url: url}
 }
 
-func (s *GormConnector) Connect() error {
+func (s *GormConnector) Connect() apierrors.ApiError {
 	db, err := gorm.Open(sqlite.Open(s.url), &gorm.Config{})
 	if err != nil {
-		return err
+		return apierrors.NewGeneralError(err)
 		//panic("failed to connect database")
 	}
 	s.connector = db
 	return nil
 }
 
-func (s *GormConnector) Migrate(object interface{}) error {
+func (s *GormConnector) Migrate(object interface{}) apierrors.ApiError {
 	s.connector.AutoMigrate(&object)
 	return nil
 }
 
-func (s *GormConnector) Add(object interface{}) error {
+func (s *GormConnector) Add(object interface{}) apierrors.ApiError {
 	if dbc := s.connector.Create(object); dbc.Error != nil {
-		return dbc.Error
+		if strings.Contains(dbc.Error.Error(), "UNIQUE constraint failed:") {
+			return apierrors.NewClientError(dbc.Error)
+		}
+		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil
 }
-func (s *GormConnector) FindByID(object interface{}, id string, selectString []string) error {
-	s.connector.Select(selectString).First(&object, "id = ?", id)
-	if object == nil {
-		return errors.New("nothing found")
+func (s *GormConnector) FindByID(object interface{}, id string, selectString []string) apierrors.ApiError {
+
+	if dbc := s.connector.Select(selectString).First(&object, "id = ?", id); dbc.Error != nil {
+		if dbc.Error.Error() == "record not found" {
+			return apierrors.NewNotFoundError(dbc.Error)
+		}
+		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil
 }
-func (s *GormConnector) UpdateByObject(data interface{}) error {
-	s.connector.Save(data)
+func (s *GormConnector) UpdateByObject(data interface{}) apierrors.ApiError {
+	if dbc := s.connector.Save(data); dbc.Error != nil {
+		return apierrors.NewGeneralError(dbc.Error)
+	}
 	return nil
 }
 
-func (s *GormConnector) UpdateByMap(model interface{}, data map[string]interface{}) error {
-	s.connector.Model(model).Where("id = ?", data["ID"].(string)).Updates(data)
+func (s *GormConnector) UpdateByMap(model interface{}, data map[string]interface{}) apierrors.ApiError {
+	if dbc := s.connector.Model(model).Where("id = ?", data["ID"].(string)).Updates(data); dbc.Error != nil {
+		return apierrors.NewGeneralError(dbc.Error)
+	}
 	return nil
 }
 
-func (s *GormConnector) GetAll(data interface{}, selectString []string) error {
-	s.connector.Select(selectString).Find(data)
+func (s *GormConnector) GetAll(data interface{}, selectString []string) apierrors.ApiError {
+	if dbc := s.connector.Select(selectString).Find(data); dbc.Error != nil {
+		return apierrors.NewGeneralError(dbc.Error)
+	}
+	return nil
+}
+
+func (s *GormConnector) DeleteByID(data interface{}) apierrors.ApiError {
+	if dbc := s.connector.Delete(data); dbc.Error != nil {
+		fmt.Println(dbc.Error)
+		return apierrors.NewGeneralError(dbc.Error)
+	}
 	return nil
 }
