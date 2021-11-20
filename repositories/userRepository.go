@@ -15,7 +15,7 @@ func NewUserRepository(dbConn database.DBConnector) *UserRepository {
 	return &UserRepository{db: dbConn}
 }
 
-func (s *UserRepository) AddUser(user *models.User) apierrors.ApiError {
+func (s *UserRepository) Add(user *models.User) apierrors.ApiError {
 	user.ID = cuid.New()
 	if err := s.db.Add(&user); err != nil {
 		return err
@@ -23,7 +23,7 @@ func (s *UserRepository) AddUser(user *models.User) apierrors.ApiError {
 	return nil
 }
 
-func (s *UserRepository) GetUserByID(id string) (*models.User, apierrors.ApiError) {
+func (s *UserRepository) GetByID(id string) (*models.User, apierrors.ApiError) {
 	var object models.User
 
 	if err := s.db.FindByID(&object, id, models.UserSelect); err != nil {
@@ -46,7 +46,7 @@ func (s *UserRepository) UpdateWithMap(data map[string]interface{}) apierrors.Ap
 	return nil
 }
 
-func (s *UserRepository) GetAllUser() ([]*models.User, apierrors.ApiError) {
+func (s *UserRepository) GetAll() ([]*models.User, apierrors.ApiError) {
 	var userList []*models.User
 	if err := s.db.GetAll(&userList, models.UserSelect); err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (s *UserRepository) GetAllUser() ([]*models.User, apierrors.ApiError) {
 	return userList, nil
 }
 
-func (s *UserRepository) DeleteUserByID(data *models.User) apierrors.ApiError {
+func (s *UserRepository) DeleteByID(data *models.User) apierrors.ApiError {
 	if err := s.db.DeleteByID(data); err != nil {
 		return err
 	}

@@ -19,6 +19,8 @@ type Stock struct {
 	Name string `gorm:"unique"`
 }
 
+var StockSelect = []string{"ID", " Name"}
+
 type Envelope struct {
 	Data    interface{} `json:"data"`
 	Message string      `json:"message"`

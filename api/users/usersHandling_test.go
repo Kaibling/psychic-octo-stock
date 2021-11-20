@@ -192,12 +192,6 @@ func TestDeleteNoneExistingUser(t *testing.T) {
 
 }
 
-func TestGetNoneExistingUser(t *testing.T) {
-	r := api.AssembleServer()
-	deleteResponse := performRequest(r, "GET", "/v1/users/adawfeefsse", nil)
-	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
-
-}
 func TestGetUser(t *testing.T) {
 	r := api.AssembleServer()
 	testUser := models.User{

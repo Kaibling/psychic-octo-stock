@@ -13,6 +13,6 @@ func AddFakeUser(count int, userRepo *repositories.UserRepository) {
 	}
 	for i := 0; i < count; i++ {
 		newUser := &models.User{Username: fake.UserName(), Password: fake.SafeEmail(), Email: fake.Email(), Address: fake.StreetAddress()}
-		userRepo.AddUser(newUser)
+		userRepo.Add(newUser)
 	}
 }

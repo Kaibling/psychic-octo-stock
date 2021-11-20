@@ -14,12 +14,15 @@ func AssembleServer() *gin.Engine {
 	sdb := database.NewDatabaseConnector(configData.DBUrl)
 	sdb.Connect()
 	sdb.Migrate(&models.User{})
+	sdb.Migrate(&models.Stock{})
 
 	userRepo := repositories.NewUserRepository(sdb)
+	stockRepo := repositories.NewStockRepository(sdb)
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(injectData("userRepo", userRepo))
+	r.Use(injectData("stockRepo", stockRepo))
 	BuildRouter(r)
 	return r
 }

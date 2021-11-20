@@ -7,12 +7,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func UserPost(c *gin.Context) {
+func userPost(c *gin.Context) {
 	var newUser models.User
 	c.BindJSON(&newUser)
 	newUser.Password = utility.HashPassword(newUser.Password)
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
-	if err := userRepo.AddUser(&newUser); err != nil {
+	if err := userRepo.Add(&newUser); err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
@@ -23,7 +23,7 @@ func UserPost(c *gin.Context) {
 }
 func usersGet(c *gin.Context) {
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
-	userList, err := userRepo.GetAllUser()
+	userList, err := userRepo.GetAll()
 	if err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
@@ -31,7 +31,7 @@ func usersGet(c *gin.Context) {
 	env := models.Envelope{Data: userList, Message: ""}
 	c.JSON(200, env)
 }
-func usersPut(c *gin.Context) {
+func userPut(c *gin.Context) {
 	userID := c.Param("id")
 	var updateUser map[string]interface{}
 	c.BindJSON(&updateUser)
@@ -40,7 +40,7 @@ func usersPut(c *gin.Context) {
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
 
 	userRepo.UpdateWithMap(updateUser)
-	loadedUser, err := userRepo.GetUserByID(userID)
+	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
 
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
@@ -52,12 +52,12 @@ func usersPut(c *gin.Context) {
 func userDelete(c *gin.Context) {
 	userID := c.Param("id")
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
-	loadedUser, err := userRepo.GetUserByID(userID)
+	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
-	if err := userRepo.DeleteUserByID(loadedUser); err != nil {
+	if err := userRepo.DeleteByID(loadedUser); err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
@@ -66,7 +66,7 @@ func userDelete(c *gin.Context) {
 func userGet(c *gin.Context) {
 	userID := c.Param("id")
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
-	loadedUser, err := userRepo.GetUserByID(userID)
+	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
