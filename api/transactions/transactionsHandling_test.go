@@ -46,8 +46,7 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, testObject.Type, reponseObject["type"])
 	assert.Equal(t, testObject.SellerID, reponseObject["sellerID"])
 	assert.Equal(t, testObject.StockID, reponseObject["stockID"])
-	//todo fix
-	//assert.Equal(t, testObject.Quantity, reponseObject["quantity"])
+	assert.Equal(t, testObject.Quantity, int(reponseObject["quantity"].(float64)))
 
 }
 
@@ -121,14 +120,14 @@ func TestGetAll(t *testing.T) {
 	object1 := reponseObjects[0].(map[string]interface{})
 	assert.Equal(t, object1["buyerID"], testObject.BuyerID)
 	assert.Equal(t, object1["stockID"], testObject.StockID)
-	//assert.Equal(t, object1["quantity"], testObject.Quantity)
+	assert.Equal(t, int(object1["quantity"].(float64)), testObject.Quantity)
 	assert.Equal(t, object1["type"], testObject.Type)
 
 	object2 := reponseObjects[1].(map[string]interface{})
 	assert.Equal(t, object2["sellerID"], testObject2.SellerID)
 
 	assert.Equal(t, object2["stockID"], testObject2.StockID)
-	//assert.Equal(t, object2["quantity"], testObject2.Quantity)
+	assert.Equal(t, int(object2["quantity"].(float64)), testObject2.Quantity)
 	assert.Equal(t, object2["type"], testObject2.Type)
 
 }
@@ -185,9 +184,8 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, err)
 	value, exists := response["data"]
 	assert.True(t, exists)
-	//data empty
 	object := value.(map[string]interface{})
-	//assert.Equal(t, object["Quantity"], testObject.Quantity)
+	assert.Equal(t, int(object["quantity"].(float64)), testObject.Quantity)
 	assert.Equal(t, object["type"], testObject.Type)
 
 }
