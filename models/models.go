@@ -33,13 +33,14 @@ type StockToUser struct {
 type Transaction struct {
 	gorm.Model
 	ID       string `gorm:"primaryKey;autoIncrement:false;not null"`
-	UserID   string `gorm:"foreignkey:userID;primaryKey" json:"userID"`
-	StockID  string `gorm:"foreignkey:stockID;primaryKey" json:"stockID"`
+	SellerID string `gorm:"foreignkey:userID" json:"sellerID"`
+	BuyerID  string `gorm:"foreignkey:userID" json:"buyerID"`
+	StockID  string `gorm:"foreignkey:stockID;not null" json:"stockID"`
 	Quantity int    `gorm:"not null" json:"quantity"`
 	Type     string `gorm:"not null" json:"type"`
 }
 
-var TransactionSelect = []string{"ID", " user_id", "stock_id", " Quantity", " Type"}
+var TransactionSelect = []string{"ID", " seller_id", "buyer_id", "stock_id", " Quantity", " Type"}
 
 type Envelope struct {
 	Data    interface{} `json:"data"`

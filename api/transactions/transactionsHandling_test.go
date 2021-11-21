@@ -28,7 +28,7 @@ func TestCreate(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	testObject := models.Transaction{
-		UserID:   testUser.ID,
+		SellerID: testUser.ID,
 		StockID:  testStock.ID,
 		Quantity: 12,
 		Type:     "SELL",
@@ -44,7 +44,7 @@ func TestCreate(t *testing.T) {
 	reponseObject, ok := value.(map[string]interface{})
 	assert.True(t, ok)
 	assert.Equal(t, testObject.Type, reponseObject["type"])
-	assert.Equal(t, testObject.UserID, reponseObject["userID"])
+	assert.Equal(t, testObject.SellerID, reponseObject["sellerID"])
 	assert.Equal(t, testObject.StockID, reponseObject["stockID"])
 	//todo fix
 	//assert.Equal(t, testObject.Quantity, reponseObject["quantity"])
@@ -94,14 +94,14 @@ func TestGetAll(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	testObject := models.Transaction{
-		UserID:   testUser.ID,
+		SellerID: testUser.ID,
 		StockID:  testStock.ID,
 		Quantity: 12,
 		Type:     "SELL",
 	}
 	transactionRepo.Add(&testObject)
 	testObject2 := models.Transaction{
-		UserID:   testUser.ID,
+		BuyerID:  testUser.ID,
 		StockID:  testStock.ID,
 		Quantity: 123,
 		Type:     "BUY",
@@ -119,13 +119,14 @@ func TestGetAll(t *testing.T) {
 	assert.True(t, ok)
 
 	object1 := reponseObjects[0].(map[string]interface{})
-	assert.Equal(t, object1["userID"], testObject.UserID)
+	assert.Equal(t, object1["buyerID"], testObject.BuyerID)
 	assert.Equal(t, object1["stockID"], testObject.StockID)
 	//assert.Equal(t, object1["quantity"], testObject.Quantity)
 	assert.Equal(t, object1["type"], testObject.Type)
 
 	object2 := reponseObjects[1].(map[string]interface{})
-	assert.Equal(t, object2["userID"], testObject2.UserID)
+	assert.Equal(t, object2["sellerID"], testObject2.SellerID)
+
 	assert.Equal(t, object2["stockID"], testObject2.StockID)
 	//assert.Equal(t, object2["quantity"], testObject2.Quantity)
 	assert.Equal(t, object2["type"], testObject2.Type)
@@ -139,7 +140,7 @@ func TestDelete(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	testObject := models.Transaction{
-		UserID:   testUser.ID,
+		SellerID: testUser.ID,
 		StockID:  testStock.ID,
 		Quantity: 12,
 		Type:     "SELL",
@@ -168,7 +169,7 @@ func TestGet(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	testObject := models.Transaction{
-		UserID:   testUser.ID,
+		SellerID: testUser.ID,
 		StockID:  testStock.ID,
 		Quantity: 12,
 		Type:     "SELL",
@@ -187,6 +188,6 @@ func TestGet(t *testing.T) {
 	//data empty
 	object := value.(map[string]interface{})
 	//assert.Equal(t, object["Quantity"], testObject.Quantity)
-	assert.Equal(t, object["Type"], testObject.Type)
+	assert.Equal(t, object["type"], testObject.Type)
 
 }
