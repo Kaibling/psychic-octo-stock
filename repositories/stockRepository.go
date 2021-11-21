@@ -68,7 +68,7 @@ func (s *StockRepository) DeleteByObject(data *models.Stock) apierrors.ApiError 
 }
 
 func (s *StockRepository) AddStockToUser(stockID string, userID string, quantity int) apierrors.ApiError {
-	model := &models.StockToUser{UserID: userID, StockID: stockID, Quantity: quantity}
+	model := &models.StockToUser{ID: cuid.New(), UserID: userID, StockID: stockID, Quantity: quantity}
 	if err := s.db.Add(&model); err != nil {
 		return err
 	}

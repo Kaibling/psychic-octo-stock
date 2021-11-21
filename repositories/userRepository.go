@@ -70,7 +70,7 @@ func (s *UserRepository) DeleteByObject(data *models.User) apierrors.ApiError {
 func (s *UserRepository) FundsByID(id string) (float64, apierrors.ApiError) {
 	var user *models.User
 	selectString := []string{"funds"}
-	if err := s.db.GetData(user, selectString, id); err != nil {
+	if err := s.db.GetData(&user, selectString, id); err != nil {
 		return 0, err
 	}
 

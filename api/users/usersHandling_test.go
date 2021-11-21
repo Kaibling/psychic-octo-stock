@@ -221,3 +221,13 @@ func TestGetUser(t *testing.T) {
 	assert.Equal(t, user["email"], testUser.Email)
 	assert.Equal(t, user["username"], testUser.Username)
 }
+
+func TestUserFunds(t *testing.T) {
+	_, userRepo, _, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234}
+	userRepo.Add(testUser)
+	userFunds, err := userRepo.FundsByID(testUser.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 1234.0, userFunds)
+
+}

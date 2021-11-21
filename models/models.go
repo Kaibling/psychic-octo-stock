@@ -12,7 +12,7 @@ type User struct {
 	Funds    float64 `gorm:"default:0" json:"funds"`
 }
 
-var UserSelect = []string{"ID", " Username", " Email", " Address"}
+var UserSelect = []string{"ID", " Username", " Email", " Address", "Funds"}
 
 type Stock struct {
 	gorm.Model

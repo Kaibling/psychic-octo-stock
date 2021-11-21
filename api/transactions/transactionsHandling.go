@@ -82,9 +82,6 @@ func ChangeStatus(transactionID string, status string) apierrors.ApiError {
 			if loadedTransaction.SellerID == "" {
 				return apierrors.NewClientError(errors.New("sellerID not set"))
 			}
-			if loadedTransaction.BuyerID != "" {
-				return apierrors.NewClientError(errors.New("buyerID already set"))
-			}
 			if !enoughStocks(loadedTransaction.SellerID, loadedTransaction.ID) {
 				return apierrors.NewClientError(errors.New("seller does not have enough stocks"))
 			}
@@ -97,9 +94,6 @@ func ChangeStatus(transactionID string, status string) apierrors.ApiError {
 		}
 		if loadedTransaction.Type == "BUY" {
 			//type BUY and buyerID not "" and sellerid "" and buyer has enough funds
-			if loadedTransaction.SellerID != "" {
-				return apierrors.NewClientError(errors.New("sellerID already set"))
-			}
 			if loadedTransaction.BuyerID == "" {
 				return apierrors.NewClientError(errors.New("buyerID not set"))
 			}
@@ -189,7 +183,7 @@ func enoughStocks(userID string, transactionID string) bool {
 		return false
 	}
 	stockRepo := repositories.StockRepo
-	stockToUserData, err := stockRepo.GetStockPerUser(transactionsData.StockID,userID)
+	stockToUserData, err := stockRepo.GetStockPerUser(transactionsData.StockID, userID)
 	if err != nil {
 		log.Println("user has not stocks: " + err.Error())
 		return false
@@ -206,43 +200,51 @@ func executeTransaction(transactionID string) error {
 	transactionCost, _ := transactionRepo.TransactionCostsbyID(transactionID)
 	if err != nil {
 		log.Println("funds fetch failed: " + err.Error())
+		return err
 	}
 	userRepo := repositories.UserRepo
 	seller, _ := userRepo.GetByID(loadedTransaction.SellerID)
 
 	atomicExecutionArray := []interface{}{}
-	updateSellerUserData := map[string]interface{}{"ID": loadedTransaction.SellerID, "Funds": seller.Funds + transactionCost}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateSellerUserData})
-
+	updateSellerUserData := map[string]interface{}{"funds": seller.Funds + transactionCost}
+	var updateSellerUserQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateSellerUserData, updateSellerUserQuery, []interface{}{loadedTransaction.SellerID}})
 	stockRepo := repositories.StockRepo
-	stockToUserDataSeller, err := stockRepo.GetStockPerUser(loadedTransaction.SellerID, loadedTransaction.StockID)
+	stockToUserDataSeller, err := stockRepo.GetStockPerUser(loadedTransaction.StockID, loadedTransaction.SellerID)
 	if err != nil {
-		log.Println("funds fetch failed: " + err.Error())
+		log.Println("Seller has not enough Stocks: " + err.Error())
+		return err
 	}
 
-	updateSellerStockData := map[string]interface{}{"StockID": loadedTransaction.StockID, "UserID": loadedTransaction.SellerID, "Quantity": stockToUserDataSeller.Quantity - loadedTransaction.Quantity}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, updateSellerStockData})
+	updateSellerStockData := map[string]interface{}{"Quantity": stockToUserDataSeller.Quantity - loadedTransaction.Quantity}
+	var updateSellerStockQuery interface{} = "stock_id = ? and user_id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, updateSellerStockData, updateSellerStockQuery, []interface{}{loadedTransaction.StockID, loadedTransaction.SellerID}})
 
-	updateBuyerUserData := map[string]interface{}{"ID": loadedTransaction.BuyerID, "Funds": seller.Funds - transactionCost}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateBuyerUserData})
+	updateBuyerUserData := map[string]interface{}{"funds": seller.Funds - transactionCost}
+	var updateBuyerUserQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateBuyerUserData, updateBuyerUserQuery, []interface{}{loadedTransaction.BuyerID}})
 	//update or insert
-	stockToUserDataBuyer, err := stockRepo.GetStockPerUser(loadedTransaction.SellerID, loadedTransaction.StockID)
+	stockToUserDataBuyer, err := stockRepo.GetStockPerUser(loadedTransaction.StockID, loadedTransaction.BuyerID)
 	if err != nil {
-		log.Println("funds fetch failed: " + err.Error())
-	}
-
-	if stockToUserDataBuyer == nil {
+		log.Println("Stocks record for Buyer: " + err.Error())
 		//Buyer has not Stocks. Insert instead of update
-		insertBuyerStockData := map[string]interface{}{"StockID": loadedTransaction.StockID, "UserID": loadedTransaction.BuyerID, "Quantity": loadedTransaction.Quantity}
-		stockRepo.AddStockToUser(loadedTransaction.StockID, loadedTransaction.BuyerID, 0)
-		atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, insertBuyerStockData})
+		err := stockRepo.AddStockToUser(loadedTransaction.StockID, loadedTransaction.BuyerID, 0)
+		if err != nil {
+			log.Println("creation of stockToUser record failed:  " + err.Error())
+			return err
+		}
+
+		insertBuyerStockData := map[string]interface{}{"Quantity": loadedTransaction.Quantity}
+		var insertBuyerStockQuery interface{} = "stock_id = ? and user_id = ?"
+		atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, insertBuyerStockData, insertBuyerStockQuery, []interface{}{loadedTransaction.StockID, loadedTransaction.BuyerID}})
 	} else {
-		updateBuyerStockData := map[string]interface{}{"StockID": loadedTransaction.StockID, "UserID": loadedTransaction.BuyerID, "Quantity": stockToUserDataBuyer.Quantity + loadedTransaction.Quantity}
-		atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, updateBuyerStockData})
+		updateBuyerStockData := map[string]interface{}{"Quantity": stockToUserDataBuyer.Quantity + loadedTransaction.Quantity}
+		var updateBuyerStockQuery interface{} = "stock_id = ? and user_id = ?"
+		atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, updateBuyerStockData, updateBuyerStockQuery, []interface{}{loadedTransaction.StockID, loadedTransaction.BuyerID}})
 	}
 
 	if err := transactionRepo.ExecuteTransaction(atomicExecutionArray); err != nil {
-		return apierrors.NewGeneralError(err)
+		return err
 	}
 	//ExecuteTransaction(userData1 , userData2 map[string]interface{})
 	//loadedTransaction

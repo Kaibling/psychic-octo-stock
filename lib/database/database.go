@@ -110,7 +110,9 @@ func (s *GormConnector) ExecuteTransaction(data []interface{}) apierrors.ApiErro
 				updateSet := v.([]interface{})
 				model := updateSet[0]
 				data := updateSet[1].(map[string]interface{})
-				dbc := tx.Model(model).Where("id = ?", data["ID"].(string)).Updates(data)
+				query := updateSet[2]
+				queryData := updateSet[3].([]interface{})
+				dbc := tx.Model(model).Where(query, queryData...).Updates(data)
 				if dbc.Error != nil {
 					return dbc.Error
 				}
@@ -128,7 +130,7 @@ func (s *GormConnector) ExecuteTransaction(data []interface{}) apierrors.ApiErro
 
 func (s *GormConnector) FindByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError {
 
-	if dbc := s.connector.Where(query, queryData...).First(object); dbc.Error != nil {
+	if dbc := s.connector.Where(query, queryData...).First(&object); dbc.Error != nil {
 		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil

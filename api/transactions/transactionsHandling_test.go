@@ -198,10 +198,12 @@ func TestAtomicFunction(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	atomicExecutionArray := []interface{}{}
-	updateTestUser := map[string]interface{}{"ID": testUser.ID, "Address": "cba-street 321"}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser})
-	updateTestStock := map[string]interface{}{"ID": testStock.ID, "Quantity": 321}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock})
+	updateTestUser := map[string]interface{}{"Address": "cba-street 321"}
+	var updateTestUserQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser, updateTestUserQuery, []interface{}{testUser.ID}})
+	updateTestStock := map[string]interface{}{"Quantity": 321}
+	var updateTestStockQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock, updateTestStockQuery, []interface{}{testStock.ID}})
 	err := transactionRepo.ExecuteTransaction(atomicExecutionArray)
 	assert.Nil(t, err)
 	checkUser, err := userRepo.GetByID(testUser.ID)
@@ -220,10 +222,12 @@ func TestAtomicFunctionRollback(t *testing.T) {
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
 	atomicExecutionArray := []interface{}{}
-	updateTestUser := map[string]interface{}{"ID": testUser.ID, "Address": "cba-street 321"}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser})
-	updateTestStock := map[string]interface{}{"ID": "noneexisting", "Quantity": 321}
-	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock})
+	updateTestUser := map[string]interface{}{"Address": "cba-street 321"}
+	var updateTestUserQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser, updateTestUserQuery, []interface{}{testUser.ID}})
+	updateTestStock := map[string]interface{}{"Quantity": 321}
+	var updateTestStockQuery interface{} = "id = ?"
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock, updateTestStockQuery, []interface{}{"noneexisting"}})
 	err := transactionRepo.ExecuteTransaction(atomicExecutionArray)
 	assert.NotNil(t, err)
 	checkUser, err := userRepo.GetByID(testUser.ID)
@@ -271,24 +275,78 @@ func TestStatusSetActive(t *testing.T) {
 	assert.Equal(t, "ACTIVE", checkTransaction.Status)
 }
 
-// func TestStatusSetActive(t *testing.T) {
-// 	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
-// 	testSeller := &models.User{Username: "Jack", Password: "abc123"}
-// 	userRepo.Add(testSeller)
-// 	testBuyer := &models.User{Username: "Jack", Password: "abc123"}
-// 	userRepo.Add(testBuyer)
-// 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
-// 	stockRepo.Add(testStock)
-// 	testObject := models.Transaction{
-// 		SellerID: testSeller.ID,
-// 		StockID:  testStock.ID,
-// 		Quantity: 12,
-// 		Type:     "SELL",
-// 	}
-// 	transactionRepo.Add(&testObject)
-// 	err := stockRepo.AddStockToUser(testStock.ID, testSeller.ID, 12)
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, testObject.Status, "PENDING")
+func TestStatusSetPending(t *testing.T) {
 
-// 	transactions.ChangeStatus(testObject.ID, "ACTIVE")
-// }
+	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	testSeller := &models.User{Username: "Jack", Password: "abc123"}
+	userRepo.Add(testSeller)
+	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+	stockRepo.Add(testStock)
+	stockRepo.AddStockToUser(testStock.ID, testSeller.ID, 12)
+	testObject := models.Transaction{
+		SellerID: testSeller.ID,
+		StockID:  testStock.ID,
+		Quantity: 12,
+		Type:     "SELL",
+		Status:   "PENDING",
+	}
+	transactionRepo.Add(&testObject)
+	assert.Equal(t, testObject.Status, "PENDING")
+	err := transactions.ChangeStatus(testObject.ID, "ACTIVE")
+	assert.Nil(t, err)
+	err = transactions.ChangeStatus(testObject.ID, "PENDING")
+	assert.Nil(t, err)
+
+	checkTransaction, err := transactionRepo.GetByID(testObject.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "PENDING", checkTransaction.Status)
+}
+
+func TestStatusSetClosed(t *testing.T) {
+
+	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	testSeller := &models.User{Username: "Jack", Password: "abc123", Email: "aba", Funds: 0}
+	err := userRepo.Add(testSeller)
+	assert.Nil(t, err)
+	testBuyer := &models.User{Username: "Jacka", Password: "abc123", Funds: 1000, Email: "abaa"}
+	err = userRepo.Add(testBuyer)
+	assert.Nil(t, err)
+	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+	err = stockRepo.Add(testStock)
+	assert.Nil(t, err)
+	err = stockRepo.AddStockToUser(testStock.ID, testSeller.ID, 123)
+	assert.Nil(t, err)
+	testObject := models.Transaction{
+		SellerID: testSeller.ID,
+		BuyerID:  testBuyer.ID,
+		StockID:  testStock.ID,
+		Quantity: 12,
+		Type:     "SELL",
+		Status:   "PENDING",
+		Price:    1,
+	}
+	transactionRepo.Add(&testObject)
+	assert.Equal(t, testObject.Status, "PENDING")
+	err = transactions.ChangeStatus(testObject.ID, "ACTIVE")
+	assert.Nil(t, err)
+	err = transactions.ChangeStatus(testObject.ID, "CLOSED")
+	assert.Nil(t, err)
+
+	checkTransaction, err := transactionRepo.GetByID(testObject.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "CLOSED", checkTransaction.Status)
+}
+
+func TestTransactionCosts(t *testing.T) {
+	_, _, _, transactionRepo := api.TestAssemblyRoute()
+	testObject := models.Transaction{
+		Quantity: 12,
+		Type:     "SELL",
+		Status:   "PENDING",
+		Price:    2,
+	}
+	transactionRepo.Add(&testObject)
+	cost, err := transactionRepo.TransactionCostsbyID(testObject.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 24.0, cost)
+}
