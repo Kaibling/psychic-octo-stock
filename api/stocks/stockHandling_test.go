@@ -22,12 +22,15 @@ func performRequest(r http.Handler, method, path string, jsonStr []byte) *httpte
 var URL = "/v1/stocks"
 
 func TestCreate(t *testing.T) {
-	r := api.AssembleServer()
+	r, userRepo, _, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123"}
+	userRepo.Add(testUser)
 	testStock := models.Stock{
-		Name: "Test",
+		Name:     "Test",
+		Quantity: 1223,
 	}
 	byteStock, _ := json.Marshal(testStock)
-	w := performRequest(r, "POST", URL, byteStock)
+	w := performRequest(r, "POST", URL+"/users/"+testUser.ID, byteStock)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -39,17 +42,37 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, testStock.Name, reponseObject["name"])
 
 }
+func TestCreateMissingUser(t *testing.T) {
+	r := api.AssembleServer()
+	testStock := models.Stock{
+		Name: "Test",
+	}
+	byteStock, _ := json.Marshal(testStock)
+	w := performRequest(r, "POST", URL+"/users/asda", byteStock)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Nil(t, err)
+	value, exists := response["message"]
+	assert.True(t, exists)
+	reponseObject, ok := value.(string)
+	assert.True(t, ok)
+	assert.Equal(t, reponseObject, "record not found")
+
+}
 
 func TestCreateNotUniqe(t *testing.T) {
-	r := api.AssembleServer()
+	r, userRepo, _, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123"}
+	userRepo.Add(testUser)
 	testStock := models.Stock{
 		Name: "Test2",
 	}
 	byteStock, _ := json.Marshal(testStock)
-	w := performRequest(r, "POST", URL, byteStock)
+	w := performRequest(r, "POST", URL+"/users/"+testUser.ID, byteStock)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	//reapply for unique constrains violation
-	w = performRequest(r, "POST", URL, byteStock)
+	w = performRequest(r, "POST", URL+"/users/"+testUser.ID, byteStock)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 
 	var response map[string]interface{}
@@ -70,31 +93,20 @@ func TestCreateNotUniqe(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	r := api.AssembleServer()
-	testStock := models.Stock{
-		Name: "Test3",
-	}
-	byteStock, _ := json.Marshal(testStock)
-	w := performRequest(r, "POST", URL, byteStock)
-	assert.Equal(t, http.StatusCreated, w.Code)
-	var response map[string]interface{}
-	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Nil(t, err)
-	value, exists := response["data"]
-	assert.True(t, exists)
-	reponseObject, ok := value.(map[string]interface{})
-	assert.True(t, ok)
-	stockID := reponseObject["ID"].(string)
+	r, _, stockRepo, _ := api.TestAssemblyRoute()
+	testStock := &models.Stock{Name: "Test3"}
+	stockRepo.Add(testStock)
+	stockID := testStock.ID
 
 	updateObject := models.Stock{
 		Name: "somethingNew",
 	}
 	updateBytes, _ := json.Marshal(updateObject)
-	w = performRequest(r, "PUT", URL+"/"+stockID, updateBytes)
+	w := performRequest(r, "PUT", URL+"/"+stockID, updateBytes)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var updateResponse map[string]interface{}
-	err = json.Unmarshal(w.Body.Bytes(), &updateResponse)
+	err := json.Unmarshal(w.Body.Bytes(), &updateResponse)
 	assert.Nil(t, err)
 	value2, exists := updateResponse["data"]
 	assert.True(t, exists)
@@ -115,22 +127,13 @@ func TestUpdateNoneExisting(t *testing.T) {
 
 }
 func TestGetAll(t *testing.T) {
-	r := api.AssembleServer()
-	testObject := models.Stock{
-		Name: "Test3",
-	}
-	byteObject, _ := json.Marshal(testObject)
-	w := performRequest(r, "POST", URL, byteObject)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	r, _, stockRepo, _ := api.TestAssemblyRoute()
+	testObject := &models.Stock{Name: "Test3"}
+	stockRepo.Add(testObject)
+	testObject2 := &models.Stock{Name: "Test4"}
+	stockRepo.Add(testObject2)
 
-	testObject2 := models.Stock{
-		Name: "Test4",
-	}
-	byteObject2, _ := json.Marshal(testObject2)
-	w = performRequest(r, "POST", URL, byteObject2)
-	assert.Equal(t, http.StatusCreated, w.Code)
-
-	w = performRequest(r, "GET", URL, nil)
+	w := performRequest(r, "GET", URL, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
@@ -150,18 +153,10 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r := api.AssembleServer()
-	testObject := models.Stock{
-		Name: "Test3",
-	}
-	byteObject, _ := json.Marshal(testObject)
-	w := performRequest(r, "POST", URL, byteObject)
-	assert.Equal(t, http.StatusCreated, w.Code)
-	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
-	value := response["data"]
-	reponseObject := value.(map[string]interface{})
-	objectID := reponseObject["ID"].(string)
+	r, _, stockRepo, _ := api.TestAssemblyRoute()
+	testObject := &models.Stock{Name: "Test3"}
+	stockRepo.Add(testObject)
+	objectID := testObject.ID
 
 	deleteResponse := performRequest(r, "DELETE", URL+"/"+objectID, nil)
 	assert.Equal(t, http.StatusNoContent, deleteResponse.Code)
@@ -178,18 +173,10 @@ func TestDeleteNoneExisting(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	r := api.AssembleServer()
-	testObject := models.Stock{
-		Name: "Test3",
-	}
-	byteObject, _ := json.Marshal(testObject)
-	w := performRequest(r, "POST", URL, byteObject)
-	assert.Equal(t, http.StatusCreated, w.Code)
-	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
-	value := createResponse["data"]
-	reponseObject := value.(map[string]interface{})
-	objectID := reponseObject["ID"].(string)
+	r, _, stockRepo, _ := api.TestAssemblyRoute()
+	testObject := &models.Stock{Name: "Test3"}
+	stockRepo.Add(testObject)
+	objectID := testObject.ID
 
 	getResponse := performRequest(r, "GET", URL+"/"+objectID, nil)
 	assert.Equal(t, http.StatusOK, getResponse.Code)

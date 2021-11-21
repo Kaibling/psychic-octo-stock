@@ -1,12 +1,24 @@
 package stocks
 
 import (
+	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/gin-gonic/gin"
 )
 
 func stockPost(c *gin.Context) {
+	userID, err := utility.GetParam("userid", c)
+	if err != nil {
+		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		return
+	}
+	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	_, err = userRepo.GetByID(userID)
+	if err != nil {
+		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		return
+	}
 	var newStock models.Stock
 	c.BindJSON(&newStock)
 	stockRepo := c.MustGet("stockRepo").(*repositories.StockRepository)
@@ -14,7 +26,9 @@ func stockPost(c *gin.Context) {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
-	//todo proper return schema
+	//add ownership to an user
+	stockRepo.AddStockToUser(newStock.ID, userID, newStock.Quantity)
+
 	env := models.Envelope{Data: newStock, Message: ""}
 	c.JSON(201, env)
 }
@@ -54,7 +68,7 @@ func stockDelete(c *gin.Context) {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
-	if err := stockRepo.DeleteByID(loadedUser); err != nil {
+	if err := stockRepo.DeleteByObject(loadedUser); err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}

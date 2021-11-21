@@ -19,8 +19,10 @@ func AssembleServer() *gin.Engine {
 	sdb.Migrate(&models.Transaction{})
 
 	userRepo := repositories.NewUserRepository(sdb)
+	repositories.SetUserRepo(userRepo)
 	stockRepo := repositories.NewStockRepository(sdb)
 	transactionRepo := repositories.NewTransactionRepository(sdb)
+	repositories.SetTransactionRepo(transactionRepo)
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
@@ -41,8 +43,10 @@ func TestAssemblyRoute() (*gin.Engine, *repositories.UserRepository, *repositori
 	sdb.Migrate(&models.Transaction{})
 
 	userRepo := repositories.NewUserRepository(sdb)
+	repositories.SetUserRepo(userRepo)
 	stockRepo := repositories.NewStockRepository(sdb)
 	transactionRepo := repositories.NewTransactionRepository(sdb)
+	repositories.SetTransactionRepo(transactionRepo)
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())

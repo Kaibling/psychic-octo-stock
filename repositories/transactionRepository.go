@@ -7,8 +7,14 @@ import (
 	"github.com/lucsky/cuid"
 )
 
+var TransactionRepo *TransactionRepository
+
 type TransactionRepository struct {
 	db database.DBConnector
+}
+
+func SetTransactionRepo(repo *TransactionRepository) {
+	TransactionRepo = repo
 }
 
 func NewTransactionRepository(dbConn database.DBConnector) *TransactionRepository {
@@ -54,9 +60,20 @@ func (s *TransactionRepository) GetAll() ([]*models.Transaction, apierrors.ApiEr
 	return TransactionList, nil
 }
 
-func (s *TransactionRepository) DeleteByID(data *models.Transaction) apierrors.ApiError {
+func (s *TransactionRepository) DeleteByObject(data *models.Transaction) apierrors.ApiError {
 	if err := s.db.DeleteByID(data); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *TransactionRepository) TransactionCostsbyID(transactionID string) (float64, apierrors.ApiError) {
+	var transaction *models.Transaction
+	selectString := []string{"price", "quantity"}
+	if err := s.db.GetData(transaction, selectString, transactionID); err != nil {
+		return 0, err
+	}
+	combinedPrice := float64(transaction.Quantity) * transaction.Price
+	return combinedPrice, nil
+
 }

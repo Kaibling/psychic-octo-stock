@@ -7,8 +7,14 @@ import (
 	"github.com/lucsky/cuid"
 )
 
+var UserRepo *UserRepository
+
 type UserRepository struct {
 	db database.DBConnector
+}
+
+func SetUserRepo(repo *UserRepository) {
+	UserRepo = repo
 }
 
 func NewUserRepository(dbConn database.DBConnector) *UserRepository {
@@ -54,9 +60,19 @@ func (s *UserRepository) GetAll() ([]*models.User, apierrors.ApiError) {
 	return userList, nil
 }
 
-func (s *UserRepository) DeleteByID(data *models.User) apierrors.ApiError {
+func (s *UserRepository) DeleteByObject(data *models.User) apierrors.ApiError {
 	if err := s.db.DeleteByID(data); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *UserRepository) FundsByID(id string) (float64, apierrors.ApiError) {
+	var user *models.User
+	selectString := []string{"funds"}
+	if err := s.db.GetData(user, selectString, id); err != nil {
+		return 0, err
+	}
+
+	return user.Funds, nil
 }

@@ -57,7 +57,7 @@ func userDelete(c *gin.Context) {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
-	if err := userRepo.DeleteByID(loadedUser); err != nil {
+	if err := userRepo.DeleteByObject(loadedUser); err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
 		return
 	}
@@ -74,3 +74,26 @@ func userGet(c *gin.Context) {
 	env := models.Envelope{Data: loadedUser, Message: ""}
 	c.JSON(200, env)
 }
+
+// func userAddStocks(c *gin.Context) {
+// 	userID := c.Param("userid")
+// 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+// 	loadedUser, err := userRepo.GetByID(userID)
+// 	if err != nil {
+// 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+// 		return
+// 	}
+// 	stockID := c.Param("stockid")
+// 	stockRepo := c.MustGet("stockRepo").(*repositories.StockRepository)
+// 	loadedstock, err := stockRepo.GetByID(stockID)
+// 	if err != nil {
+// 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+// 		return
+// 	}
+// 	stockQuantity := c.Param("quantity")
+// 	//get current amount of stocks
+// 	//add new quantity
+
+// 	env := models.Envelope{Data: loadedUser, Message: ""}
+// 	c.JSON(200, env)
+// }

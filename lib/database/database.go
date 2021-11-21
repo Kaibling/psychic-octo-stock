@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
@@ -18,6 +17,7 @@ type DBConnector interface {
 	UpdateByMap(model interface{}, data map[string]interface{}) apierrors.ApiError
 	GetAll(data interface{}, selectString []string) apierrors.ApiError
 	DeleteByID(model interface{}) apierrors.ApiError
+	GetData(data interface{}, selectString []string, id string) apierrors.ApiError
 }
 
 type GormConnector struct {
@@ -86,7 +86,13 @@ func (s *GormConnector) GetAll(data interface{}, selectString []string) apierror
 
 func (s *GormConnector) DeleteByID(data interface{}) apierrors.ApiError {
 	if dbc := s.connector.Delete(data); dbc.Error != nil {
-		fmt.Println(dbc.Error)
+		return apierrors.NewGeneralError(dbc.Error)
+	}
+	return nil
+}
+
+func (s *GormConnector) GetData(data interface{}, selectString []string, id string) apierrors.ApiError {
+	if dbc := s.connector.Select(selectString).Where("id = ?", id).Find(data); dbc.Error != nil {
 		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil

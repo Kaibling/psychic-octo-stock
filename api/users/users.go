@@ -10,6 +10,7 @@ func AddRoute(router *gin.RouterGroup) *gin.RouterGroup {
 		r.PUT(":id", userPut)
 		r.DELETE(":id", userDelete)
 		r.GET(":id", userGet)
+		//r.GET(":userid/stocks/:stockid/:quantity", userAddStocks)
 	}
 	return r
 }

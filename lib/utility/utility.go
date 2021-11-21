@@ -2,8 +2,11 @@ package utility
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 
+	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,4 +30,12 @@ func ComparePasswords(hashedPw string, comparePw string) bool {
 func BeautifyJson(data interface{}) string {
 	b, _ := json.MarshalIndent(data, "", "  ")
 	return string(b)
+}
+
+func GetParam(key string, c *gin.Context) (string, apierrors.ApiError) {
+	parameter := c.Param(key)
+	if parameter == "" {
+		return "", apierrors.NewClientError(errors.New("path parameter '" + key + "' missing"))
+	}
+	return parameter, nil
 }
