@@ -19,7 +19,8 @@ func NewConfig() *Configuration {
 		// if err != nil {
 		// 	log.Println(err)
 		// }
-		dbURL = "file::memory:" // filepath.Join(path, "local.db")
+		// dbURL = filepath.Join(path, "local.db")
+		dbURL = "file::memory:"
 	}
 	Config = &Configuration{DBUrl: dbURL}
 	return &Configuration{DBUrl: dbURL}

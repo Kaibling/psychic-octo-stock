@@ -36,7 +36,7 @@ func TestCreate(t *testing.T) {
 	assert.True(t, exists)
 	reponseObject, ok := value.(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, testStock.Name, reponseObject["Name"])
+	assert.Equal(t, testStock.Name, reponseObject["name"])
 
 }
 
@@ -100,7 +100,7 @@ func TestUpdate(t *testing.T) {
 	assert.True(t, exists)
 	reponseupdatedObject, ok := value2.(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, updateObject.Name, reponseupdatedObject["Name"])
+	assert.Equal(t, updateObject.Name, reponseupdatedObject["name"])
 
 }
 func TestUpdateNoneExisting(t *testing.T) {
@@ -142,10 +142,10 @@ func TestGetAll(t *testing.T) {
 	assert.True(t, ok)
 
 	object1 := reponseObjects[0].(map[string]interface{})
-	assert.Equal(t, object1["Name"], testObject.Name)
+	assert.Equal(t, object1["name"], testObject.Name)
 
 	object2 := reponseObjects[1].(map[string]interface{})
-	assert.Equal(t, object2["Name"], testObject2.Name)
+	assert.Equal(t, object2["name"], testObject2.Name)
 
 }
 
@@ -201,6 +201,6 @@ func TestGet(t *testing.T) {
 	assert.True(t, exists)
 	//data empty
 	object := value.(map[string]interface{})
-	assert.Equal(t, object["Name"], testObject.Name)
+	assert.Equal(t, object["name"], testObject.Name)
 
 }
