@@ -25,9 +25,9 @@ var StockSelect = []string{"ID", " Name", "Quantity"}
 
 type StockToUser struct {
 	gorm.Model
-	//ID       string `gorm:"primaryKey;autoIncrement:false;not null"`
-	StockID  string `gorm:"foreignkey:StockID;primaryKey"`
-	UserID   string `gorm:"foreignkey:UserID;primaryKey"`
+	ID       string `gorm:"primaryKey;autoIncrement:false;not null"`
+	StockID  string `gorm:"foreignkey:StockID"`
+	UserID   string `gorm:"foreignkey:UserID"`
 	Quantity int    `gorm:"not null" json:"quantity"`
 }
 
@@ -46,7 +46,7 @@ type Transaction struct {
 
 var transactionTypes = []string{"SELL", "BUY"}
 var transactionStatus = []string{"PENDING", "ACTIVE", "CLOSED", "CANCELLED"}
-var TransactionSelect = []string{"ID", " seller_id", "buyer_id", "stock_id", " Quantity", " Type"}
+var TransactionSelect = []string{"ID", " seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "Status"}
 
 type Envelope struct {
 	Data    interface{} `json:"data"`

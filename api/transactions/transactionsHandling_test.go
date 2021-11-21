@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
+	"github.com/Kaibling/psychic-octo-stock/api/transactions"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/stretchr/testify/assert"
 )
@@ -189,3 +190,105 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, object["type"], testObject.Type)
 
 }
+
+func TestAtomicFunction(t *testing.T) {
+	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123"}
+	userRepo.Add(testUser)
+	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+	stockRepo.Add(testStock)
+	atomicExecutionArray := []interface{}{}
+	updateTestUser := map[string]interface{}{"ID": testUser.ID, "Address": "cba-street 321"}
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser})
+	updateTestStock := map[string]interface{}{"ID": testStock.ID, "Quantity": 321}
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock})
+	err := transactionRepo.ExecuteTransaction(atomicExecutionArray)
+	assert.Nil(t, err)
+	checkUser, err := userRepo.GetByID(testUser.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "cba-street 321", checkUser.Address)
+
+	checkStock, err := stockRepo.GetByID(testStock.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 321, checkStock.Quantity)
+}
+
+func TestAtomicFunctionRollback(t *testing.T) {
+	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123"}
+	userRepo.Add(testUser)
+	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+	stockRepo.Add(testStock)
+	atomicExecutionArray := []interface{}{}
+	updateTestUser := map[string]interface{}{"ID": testUser.ID, "Address": "cba-street 321"}
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateTestUser})
+	updateTestStock := map[string]interface{}{"ID": "noneexisting", "Quantity": 321}
+	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.Stock{}, updateTestStock})
+	err := transactionRepo.ExecuteTransaction(atomicExecutionArray)
+	assert.NotNil(t, err)
+	checkUser, err := userRepo.GetByID(testUser.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "abc-street 123", checkUser.Address)
+
+	checkStock, err := stockRepo.GetByID(testStock.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, 123, checkStock.Quantity)
+}
+
+// status
+
+func TestStatusSetActive(t *testing.T) {
+
+	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	testSeller := &models.User{Username: "Jack", Password: "abc123"}
+	userRepo.Add(testSeller)
+	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+	stockRepo.Add(testStock)
+	testObject := models.Transaction{
+		SellerID: testSeller.ID,
+		StockID:  testStock.ID,
+		Quantity: 12,
+		Type:     "SELL",
+		Status:   "PENDING",
+	}
+	transactionRepo.Add(&testObject)
+	assert.Equal(t, testObject.Status, "PENDING")
+	err := transactions.ChangeStatus(testObject.ID, "ACTIVE")
+	assert.NotNil(t, err)
+	assert.Equal(t, err.Error(), "seller does not have enough stocks")
+	checkTransaction, err := transactionRepo.GetByID(testObject.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, checkTransaction.Status, "PENDING")
+
+	err = stockRepo.AddStockToUser(testStock.ID, testSeller.ID, 12)
+	assert.Nil(t, err)
+
+	err = transactions.ChangeStatus(testObject.ID, "ACTIVE")
+	assert.Nil(t, err)
+
+	checkTransaction, err = transactionRepo.GetByID(testObject.ID)
+	assert.Nil(t, err)
+	assert.Equal(t, "ACTIVE", checkTransaction.Status)
+}
+
+// func TestStatusSetActive(t *testing.T) {
+// 	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+// 	testSeller := &models.User{Username: "Jack", Password: "abc123"}
+// 	userRepo.Add(testSeller)
+// 	testBuyer := &models.User{Username: "Jack", Password: "abc123"}
+// 	userRepo.Add(testBuyer)
+// 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
+// 	stockRepo.Add(testStock)
+// 	testObject := models.Transaction{
+// 		SellerID: testSeller.ID,
+// 		StockID:  testStock.ID,
+// 		Quantity: 12,
+// 		Type:     "SELL",
+// 	}
+// 	transactionRepo.Add(&testObject)
+// 	err := stockRepo.AddStockToUser(testStock.ID, testSeller.ID, 12)
+// 	assert.Nil(t, err)
+// 	assert.Equal(t, testObject.Status, "PENDING")
+
+// 	transactions.ChangeStatus(testObject.ID, "ACTIVE")
+// }

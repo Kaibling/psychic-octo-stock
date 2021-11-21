@@ -1,11 +1,14 @@
 package database
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type DBConnector interface {
@@ -18,6 +21,8 @@ type DBConnector interface {
 	GetAll(data interface{}, selectString []string) apierrors.ApiError
 	DeleteByID(model interface{}) apierrors.ApiError
 	GetData(data interface{}, selectString []string, id string) apierrors.ApiError
+	ExecuteTransaction(data []interface{}) apierrors.ApiError
+	FindByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError
 }
 
 type GormConnector struct {
@@ -30,7 +35,7 @@ func NewDatabaseConnector(url string) *GormConnector {
 }
 
 func (s *GormConnector) Connect() apierrors.ApiError {
-	db, err := gorm.Open(sqlite.Open(s.url), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(s.url), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
 	if err != nil {
 		return apierrors.NewGeneralError(err)
 		//panic("failed to connect database")
@@ -93,6 +98,37 @@ func (s *GormConnector) DeleteByID(data interface{}) apierrors.ApiError {
 
 func (s *GormConnector) GetData(data interface{}, selectString []string, id string) apierrors.ApiError {
 	if dbc := s.connector.Select(selectString).Where("id = ?", id).Find(data); dbc.Error != nil {
+		return apierrors.NewGeneralError(dbc.Error)
+	}
+	return nil
+}
+
+func (s *GormConnector) ExecuteTransaction(data []interface{}) apierrors.ApiError {
+	dbc := s.connector.Transaction(
+		func(tx *gorm.DB) error {
+			for _, v := range data {
+				updateSet := v.([]interface{})
+				model := updateSet[0]
+				data := updateSet[1].(map[string]interface{})
+				dbc := tx.Model(model).Where("id = ?", data["ID"].(string)).Updates(data)
+				if dbc.Error != nil {
+					return dbc.Error
+				}
+				if dbc.RowsAffected != 1 {
+					return errors.New("Update failed: Rows affected: " + fmt.Sprintln(dbc.RowsAffected))
+				}
+			}
+			return nil
+		})
+	if dbc != nil {
+		return apierrors.NewGeneralError(dbc)
+	}
+	return nil
+}
+
+func (s *GormConnector) FindByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError {
+
+	if dbc := s.connector.Where(query, queryData...).First(object); dbc.Error != nil {
 		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil

@@ -7,8 +7,14 @@ import (
 	"github.com/lucsky/cuid"
 )
 
+var StockRepo *StockRepository
+
 type StockRepository struct {
 	db database.DBConnector
+}
+
+func SetStockRepo(repo *StockRepository) {
+	StockRepo = repo
 }
 
 func NewStockRepository(dbConn database.DBConnector) *StockRepository {
@@ -67,4 +73,15 @@ func (s *StockRepository) AddStockToUser(stockID string, userID string, quantity
 		return err
 	}
 	return nil
+}
+
+func (s *StockRepository) GetStockPerUser(stockID string, userID string) (*models.StockToUser, apierrors.ApiError) {
+	var object models.StockToUser
+
+	query := "user_id = ? AND stock_id = ?"
+	querData := []interface{}{userID, stockID}
+	if err := s.db.FindByWhere(&object, query, querData); err != nil {
+		return nil, err
+	}
+	return &object, nil
 }

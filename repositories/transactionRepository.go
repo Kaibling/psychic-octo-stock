@@ -77,3 +77,10 @@ func (s *TransactionRepository) TransactionCostsbyID(transactionID string) (floa
 	return combinedPrice, nil
 
 }
+
+func (s *TransactionRepository) ExecuteTransaction(Data []interface{}) apierrors.ApiError {
+	if err := s.db.ExecuteTransaction(Data); err != nil {
+		return err
+	}
+	return nil
+}
