@@ -8,7 +8,7 @@ import (
 )
 
 func BuildRouter(router *gin.Engine) *gin.RouterGroup {
-	v1 := router.Group("/v1")
+	v1 := router.Group("/api/v1")
 	{
 		users.AddRoute(v1)
 		stocks.AddRoute(v1)

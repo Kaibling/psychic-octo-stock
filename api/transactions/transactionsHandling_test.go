@@ -20,7 +20,7 @@ func performRequest(r http.Handler, method, path string, jsonStr []byte) *httpte
 	return w
 }
 
-var URL = "/v1/transactions"
+var URL = "/api/v1/transactions"
 
 func TestCreate(t *testing.T) {
 	r, userRepo, stockRepo, _ := api.TestAssemblyRoute()
