@@ -3,6 +3,7 @@ package repositories
 import (
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
+	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/lucsky/cuid"
 )
@@ -23,6 +24,7 @@ func NewUserRepository(dbConn database.DBConnector) *UserRepository {
 
 func (s *UserRepository) Add(user *models.User) apierrors.ApiError {
 	user.ID = cuid.New()
+	user.Password = utility.HashPassword(user.Password)
 	if err := s.db.Add(&user); err != nil {
 		return err
 	}
@@ -75,4 +77,24 @@ func (s *UserRepository) FundsByID(id string) (float64, apierrors.ApiError) {
 	}
 
 	return user.Funds, nil
+}
+
+// func (s *UserRepository) GetPWByName(id string) (string, apierrors.ApiError) {
+// 	var user *models.User
+// 	selectString := []string{"password"}
+// 	if err := s.db.GetData(&user, selectString, id); err != nil {
+// 		return "", err
+// 	}
+// 	return user.Password, nil
+// }
+
+func (s *UserRepository) GetPWByName(userName string) (string, apierrors.ApiError) {
+	var object models.User
+
+	query := "username = ?"
+	querData := []interface{}{userName}
+	if err := s.db.FindByWhere(&object, query, querData); err != nil {
+		return "", err
+	}
+	return object.Password, nil
 }

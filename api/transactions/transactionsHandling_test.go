@@ -1,10 +1,8 @@
 package transactions_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
@@ -13,17 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func performRequest(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder {
-	req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
-}
-
 var URL = "/api/v1/transactions"
 
 func TestCreate(t *testing.T) {
-	r, userRepo, stockRepo, _ := api.TestAssemblyRoute()
+	r, userRepo, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -35,7 +26,7 @@ func TestCreate(t *testing.T) {
 		Type:     "SELL",
 	}
 	byteObject, _ := json.Marshal(testObject)
-	w := performRequest(r, "POST", URL, byteObject)
+	w := performTestRequest(r, "POST", URL, byteObject)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -52,7 +43,7 @@ func TestCreate(t *testing.T) {
 }
 
 // func TestCreateNotenoughStocks(t *testing.T) {
-// 	r, userRepo, stockRepo, _ := api.TestAssemblyRoute()
+// 	r, userRepo, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
 // 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 // 	userRepo.Add(testUser)
 // 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -88,7 +79,7 @@ func TestCreate(t *testing.T) {
 // }
 
 func TestGetAll(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -107,7 +98,7 @@ func TestGetAll(t *testing.T) {
 		Type:     "BUY",
 	}
 	transactionRepo.Add(&testObject2)
-	w := performRequest(r, "GET", URL, nil)
+	w := performTestRequest(r, "GET", URL, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
@@ -134,7 +125,7 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -148,22 +139,22 @@ func TestDelete(t *testing.T) {
 	transactionRepo.Add(&testObject)
 	objectID := testObject.ID
 
-	deleteResponse := performRequest(r, "DELETE", URL+"/"+objectID, nil)
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/"+objectID, nil)
 	assert.Equal(t, http.StatusNoContent, deleteResponse.Code)
 
-	deleteResponse = performRequest(r, "DELETE", URL+"/"+objectID, nil)
+	deleteResponse = performTestRequest(r, "DELETE", URL+"/"+objectID, nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 }
 
 func TestDeleteNoneExisting(t *testing.T) {
-	r := api.AssembleServer()
-	deleteResponse := performRequest(r, "DELETE", URL+"/adawfeefsse", nil)
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
 
 func TestGet(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -177,7 +168,7 @@ func TestGet(t *testing.T) {
 	transactionRepo.Add(&testObject)
 	objectID := testObject.ID
 
-	getResponse := performRequest(r, "GET", URL+"/"+objectID, nil)
+	getResponse := performTestRequest(r, "GET", URL+"/"+objectID, nil)
 	assert.Equal(t, http.StatusOK, getResponse.Code)
 
 	var response map[string]interface{}
@@ -192,8 +183,8 @@ func TestGet(t *testing.T) {
 }
 
 func TestAtomicFunction(t *testing.T) {
-	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
-	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123"}
+	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
@@ -216,8 +207,8 @@ func TestAtomicFunction(t *testing.T) {
 }
 
 func TestAtomicFunctionRollback(t *testing.T) {
-	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
-	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123"}
+	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
@@ -243,8 +234,8 @@ func TestAtomicFunctionRollback(t *testing.T) {
 
 func TestStatusSetActive(t *testing.T) {
 
-	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
-	testSeller := &models.User{Username: "Jack", Password: "abc123"}
+	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	testSeller := &models.User{Username: "Jack", Password: "abc123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testSeller)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
 	stockRepo.Add(testStock)
@@ -277,7 +268,7 @@ func TestStatusSetActive(t *testing.T) {
 
 func TestStatusSetPending(t *testing.T) {
 
-	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
 	testSeller := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testSeller)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -304,7 +295,7 @@ func TestStatusSetPending(t *testing.T) {
 
 func TestStatusSetClosed(t *testing.T) {
 
-	_, userRepo, stockRepo, transactionRepo := api.TestAssemblyRoute()
+	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
 	testSeller := &models.User{Username: "Jack", Password: "abc123", Email: "aba", Funds: 0}
 	err := userRepo.Add(testSeller)
 	assert.Nil(t, err)
@@ -338,7 +329,7 @@ func TestStatusSetClosed(t *testing.T) {
 }
 
 func TestTransactionCosts(t *testing.T) {
-	_, _, _, transactionRepo := api.TestAssemblyRoute()
+	_, _, _, transactionRepo, _ := api.TestAssemblyRoute()
 	testObject := models.Transaction{
 		Quantity: 12,
 		Type:     "SELL",

@@ -1,10 +1,8 @@
 package users_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
@@ -12,24 +10,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func performRequest(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder {
-	req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
-}
-
 var URL = "/api/v1/users"
 
 func TestCreateUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test",
 		Email:    "abc@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -44,17 +35,17 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateUserNotUniqe(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test2",
 		Email:    "abc2@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	//reapply for unique constrains violation
-	w = performRequest(r, "POST", URL, byte_User)
+	w = performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusUnprocessableEntity, w.Code)
 
 	var response map[string]interface{}
@@ -75,14 +66,14 @@ func TestCreateUserNotUniqe(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -93,11 +84,14 @@ func TestUpdateUser(t *testing.T) {
 	assert.True(t, ok)
 	userID := reponseUser["ID"].(string)
 
-	updateUser := models.User{
-		Address: "somethingNew",
+	//updateUser := models.User{
+	//	Address: "somethingNew",
+	//}
+	updateUser := map[string]interface{}{
+		"Address": "somethingNew",
 	}
 	updateByteUser, _ := json.Marshal(updateUser)
-	w = performRequest(r, "PUT", URL+"/"+userID, updateByteUser)
+	w = performTestRequest(r, "PUT", URL+"/"+userID, updateByteUser)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var updateResponse map[string]interface{}
@@ -107,41 +101,40 @@ func TestUpdateUser(t *testing.T) {
 	assert.True(t, exists)
 	reponseUser, ok = value2.(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, updateUser.Address, reponseUser["address"])
+	assert.Equal(t, updateUser["Address"], reponseUser["address"])
 
 }
 func TestUpdateNoneExistingUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	userID := "thisdoesnotexists"
 	updateUser := models.User{
 		Address: "somethingNew",
 	}
 	updateByteUser, _ := json.Marshal(updateUser)
-	w := performRequest(r, "PUT", URL+"/"+userID, updateByteUser)
+	w := performTestRequest(r, "PUT", URL+"/"+userID, updateByteUser)
 	assert.Equal(t, http.StatusNotFound, w.Code)
 
 }
 func TestGetAllUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
-
 	testUser2 := models.User{
 		Username: "Test4",
 		Email:    "abc3@abca.ac",
 		Password: "abc123",
 	}
 	byte_User2, _ := json.Marshal(testUser2)
-	w = performRequest(r, "POST", URL, byte_User2)
+	w = performTestRequest(r, "POST", URL, byte_User2)
 	assert.Equal(t, http.StatusCreated, w.Code)
 
-	w = performRequest(r, "GET", URL, nil)
+	w = performTestRequest(r, "GET", URL, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
@@ -152,11 +145,11 @@ func TestGetAllUser(t *testing.T) {
 	reponseUsers, ok := value.([]interface{})
 	assert.True(t, ok)
 
-	user1 := reponseUsers[0].(map[string]interface{})
+	user1 := reponseUsers[1].(map[string]interface{})
 	assert.Equal(t, user1["username"], testUser.Username)
 	assert.Equal(t, user1["email"], testUser.Email)
 
-	user2 := reponseUsers[1].(map[string]interface{})
+	user2 := reponseUsers[2].(map[string]interface{})
 	assert.Equal(t, user2["username"], testUser2.Username)
 	assert.Equal(t, user2["email"], testUser2.Email)
 
@@ -165,14 +158,14 @@ func TestGetAllUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &response)
@@ -180,29 +173,29 @@ func TestDeleteUser(t *testing.T) {
 	reponseUser := value.(map[string]interface{})
 	userID := reponseUser["ID"].(string)
 
-	deleteResponse := performRequest(r, "DELETE", URL+"/"+userID, nil)
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/"+userID, nil)
 	assert.Equal(t, http.StatusNoContent, deleteResponse.Code)
 
-	deleteResponse = performRequest(r, "DELETE", URL+"/"+userID, nil)
+	deleteResponse = performTestRequest(r, "DELETE", URL+"/"+userID, nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 }
 
 func TestDeleteNoneExistingUser(t *testing.T) {
-	r := api.AssembleServer()
-	deleteResponse := performRequest(r, "DELETE", URL+"/adawfeefsse", nil)
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
 
 func TestGetUser(t *testing.T) {
-	r := api.AssembleServer()
+	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
 		Password: "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
-	w := performRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var createResponse map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &createResponse)
@@ -210,7 +203,7 @@ func TestGetUser(t *testing.T) {
 	reponseUser := value.(map[string]interface{})
 	userID := reponseUser["ID"].(string)
 
-	getResponse := performRequest(r, "GET", URL+"/"+userID, nil)
+	getResponse := performTestRequest(r, "GET", URL+"/"+userID, nil)
 	assert.Equal(t, http.StatusOK, getResponse.Code)
 
 	var response map[string]interface{}
@@ -225,11 +218,10 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestUserFunds(t *testing.T) {
-	_, userRepo, _, _ := api.TestAssemblyRoute()
-	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234}
+	_, userRepo, _, _, _ := api.TestAssemblyRoute()
+	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "a@a.a"}
 	userRepo.Add(testUser)
 	userFunds, err := userRepo.FundsByID(testUser.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 1234.0, userFunds)
-
 }

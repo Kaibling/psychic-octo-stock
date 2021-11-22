@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,7 +21,6 @@ func HashPassword(plain string) string {
 	return string(hash)
 }
 func ComparePasswords(hashedPw string, comparePw string) bool {
-
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPw), []byte(comparePw)); err != nil {
 		log.Println("password compare error: " + err.Error())
 		return false
@@ -38,4 +39,17 @@ func GetParam(key string, c *gin.Context) (string, apierrors.ApiError) {
 		return "", apierrors.NewClientError(errors.New("path parameter '" + key + "' missing"))
 	}
 	return parameter, nil
+}
+
+func GenerateToken(username string, hmacSampleSecret interface{}) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"name": username,
+		"nbf":  time.Now().Unix(),
+	})
+
+	tokenString, err := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		return "", err
+	}
+	return tokenString, nil
 }

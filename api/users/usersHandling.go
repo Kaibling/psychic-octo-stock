@@ -1,7 +1,6 @@
 package users
 
 import (
-	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/gin-gonic/gin"
@@ -10,7 +9,6 @@ import (
 func userPost(c *gin.Context) {
 	var newUser models.User
 	c.BindJSON(&newUser)
-	newUser.Password = utility.HashPassword(newUser.Password)
 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
 	if err := userRepo.Add(&newUser); err != nil {
 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
@@ -74,26 +72,3 @@ func userGet(c *gin.Context) {
 	env := models.Envelope{Data: loadedUser, Message: ""}
 	c.JSON(200, env)
 }
-
-// func userAddStocks(c *gin.Context) {
-// 	userID := c.Param("userid")
-// 	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
-// 	loadedUser, err := userRepo.GetByID(userID)
-// 	if err != nil {
-// 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
-// 		return
-// 	}
-// 	stockID := c.Param("stockid")
-// 	stockRepo := c.MustGet("stockRepo").(*repositories.StockRepository)
-// 	loadedstock, err := stockRepo.GetByID(stockID)
-// 	if err != nil {
-// 		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
-// 		return
-// 	}
-// 	stockQuantity := c.Param("quantity")
-// 	//get current amount of stocks
-// 	//add new quantity
-
-// 	env := models.Envelope{Data: loadedUser, Message: ""}
-// 	c.JSON(200, env)
-// }
