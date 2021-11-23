@@ -1,74 +1,89 @@
 package users
 
 import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
 )
 
-func userPost(c *gin.Context) {
+func userPost(w http.ResponseWriter, r *http.Request) {
 	var newUser models.User
-	c.BindJSON(&newUser)
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	erra := json.NewDecoder(r.Body).Decode(&newUser)
+	if erra != nil {
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		return
+	}
+	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	if err := userRepo.Add(&newUser); err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	//todo proper return schema
 	newUser.Password = ""
-	env := models.Envelope{Data: newUser, Message: ""}
-	c.JSON(201, env)
+	utility.SendResponse(w, r, &models.Envelope{Data: newUser, Message: ""}, http.StatusCreated)
+	return
 }
-func usersGet(c *gin.Context) {
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+func usersGet(w http.ResponseWriter, r *http.Request) {
+	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
+
 	userList, err := userRepo.GetAll()
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
-	env := models.Envelope{Data: userList, Message: ""}
-	c.JSON(200, env)
+	utility.SendResponse(w, r, &models.Envelope{Data: userList, Message: ""}, http.StatusOK)
+	return
 }
-func userPut(c *gin.Context) {
-	userID := c.Param("id")
+func userPut(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
 	var updateUser map[string]interface{}
-	c.BindJSON(&updateUser)
+	erra := json.NewDecoder(r.Body).Decode(&updateUser)
+	if erra != nil {
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		return
+
+	}
 
 	updateUser["ID"] = userID
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 
 	userRepo.UpdateWithMap(updateUser)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: ""}, err.HttpStatus())
 		return
 	}
-	env := models.Envelope{Data: loadedUser, Message: ""}
-	c.JSON(200, env)
+
+	utility.SendResponse(w, r, &models.Envelope{Data: loadedUser, Message: ""}, http.StatusOK)
+	return
 }
-func userDelete(c *gin.Context) {
-	userID := c.Param("id")
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+func userDelete(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
+	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: ""}, err.HttpStatus())
 		return
 	}
 	if err := userRepo.DeleteByObject(loadedUser); err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
-	c.JSON(204, nil)
+	utility.SendResponse(w, r, nil, http.StatusNoContent)
+	return
 }
-func userGet(c *gin.Context) {
-	userID := c.Param("id")
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+func userGet(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
+	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
-	env := models.Envelope{Data: loadedUser, Message: ""}
-	c.JSON(200, env)
+	utility.SendResponse(w, r, &models.Envelope{Data: loadedUser, Message: ""}, http.StatusOK)
+	return
 }

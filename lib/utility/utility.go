@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/render"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,14 +35,6 @@ func BeautifyJson(data interface{}) string {
 	return string(b)
 }
 
-func GetParam(key string, c *gin.Context) (string, apierrors.ApiError) {
-	parameter := c.Param(key)
-	if parameter == "" {
-		return "", apierrors.NewClientError(errors.New("path parameter '" + key + "' missing"))
-	}
-	return parameter, nil
-}
-
 func GenerateToken(username string, hmacSampleSecret interface{}) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"name": username,
@@ -52,4 +46,18 @@ func GenerateToken(username string, hmacSampleSecret interface{}) (string, error
 		return "", err
 	}
 	return tokenString, nil
+}
+
+func GetContext(key string, r *http.Request) interface{} {
+	parameter := r.Context().Value(key)
+	if parameter == nil {
+		panic(apierrors.NewClientError(errors.New("context parameter '" + key + "' missing")))
+		//return "", apierrors.NewClientError(errors.New("context parameter '" + key + "' missing"))
+	}
+	return parameter
+}
+
+func SendResponse(w http.ResponseWriter, r *http.Request, data *models.Envelope, httpStatusCode int) {
+	render.Status(r, httpStatusCode)
+	render.Respond(w, r, data)
 }

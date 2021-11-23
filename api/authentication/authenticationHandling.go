@@ -1,10 +1,12 @@
 package authentication
 
 import (
+	"encoding/json"
+	"net/http"
+
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
-	"github.com/gin-gonic/gin"
 )
 
 type UserLogin struct {
@@ -12,25 +14,31 @@ type UserLogin struct {
 	Password string
 }
 
-func login(c *gin.Context) {
+func login(w http.ResponseWriter, r *http.Request) {
 
-	hmacSampleSecret := c.MustGet("hmacSecret").([]byte)
+	hmacSampleSecret := utility.GetContext("hmacSecret", r).([]byte)
+
 	var userLogin UserLogin
-	c.BindJSON(&userLogin)
-	userRepo := c.MustGet("userRepo").(*repositories.UserRepository)
+	erra := json.NewDecoder(r.Body).Decode(&userLogin)
+	if erra != nil {
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		return
+	}
+	userRepo, _ := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	psHash, err := userRepo.GetPWByName(userLogin.Username)
 	if err != nil {
-		c.JSON(401, models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "username/password incorrect"}, http.StatusUnauthorized)
+		return
 	}
 	if !utility.ComparePasswords(psHash, userLogin.Password) {
-		c.JSON(401, models.Envelope{Data: "", Message: "username/password incorrect"})
-		c.Abort()
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "username/password incorrect"}, http.StatusUnauthorized)
 		return
 	}
 
 	token, erro := utility.GenerateToken(userLogin.Username, hmacSampleSecret)
 	if erro != nil {
-		c.JSON(500, models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, http.StatusBadGateway)
+		return
 	}
-	c.JSON(200, models.Envelope{Data: token, Message: ""})
+	utility.SendResponse(w, r, &models.Envelope{Data: token, Message: ""}, http.StatusOK)
 }

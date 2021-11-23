@@ -1,68 +1,76 @@
 package transactions
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
+	"net/http"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
 )
 
-func transactionPost(c *gin.Context) {
+func transactionPost(w http.ResponseWriter, r *http.Request) {
 	var newTransaction models.Transaction
-	c.BindJSON(&newTransaction)
+	erra := json.NewDecoder(r.Body).Decode(&newTransaction)
+	if erra != nil {
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		return
+
+	}
 	if !models.IsTransactionsType(newTransaction.Type) {
 		err := apierrors.NewClientError(errors.New("transactiontype is neither 'BUY' or 'SELL'"))
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	//todo check if seller has enoigh stock
-	transactionRepo := c.MustGet("transactionRepo").(*repositories.TransactionRepository)
+	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	if err := transactionRepo.Add(&newTransaction); err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	//todo proper return schema
 	env := models.Envelope{Data: newTransaction, Message: ""}
-	c.JSON(201, env)
+	utility.SendResponse(w, r, &env, http.StatusCreated)
 }
-func transactionsGet(c *gin.Context) {
-	transactionRepo := c.MustGet("transactionRepo").(*repositories.TransactionRepository)
+func transactionsGet(w http.ResponseWriter, r *http.Request) {
+	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	transactionList, err := transactionRepo.GetAll()
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	env := models.Envelope{Data: transactionList, Message: ""}
-	c.JSON(200, env)
+	utility.SendResponse(w, r, &env, http.StatusOK)
 }
 
-func transactionDelete(c *gin.Context) {
-	transactionID := c.Param("id")
-	transactionRepo := c.MustGet("transactionRepo").(*repositories.TransactionRepository)
+func transactionDelete(w http.ResponseWriter, r *http.Request) {
+	transactionID := chi.URLParam(r, "id")
+	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	if err := transactionRepo.DeleteByObject(loadedUser); err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
-	c.JSON(204, nil)
+	utility.SendResponse(w, r, nil, http.StatusNoContent)
 }
-func transactionGet(c *gin.Context) {
-	transactionID := c.Param("id")
-	transactionRepo := c.MustGet("transactionRepo").(*repositories.TransactionRepository)
+func transactionGet(w http.ResponseWriter, r *http.Request) {
+	transactionID := chi.URLParam(r, "id")
+	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)
 	if err != nil {
-		c.JSON(err.HttpStatus(), models.Envelope{Data: "", Message: err.Error()})
+		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
 		return
 	}
 	env := models.Envelope{Data: loadedUser, Message: ""}
-	c.JSON(200, env)
+	utility.SendResponse(w, r, &env, http.StatusOK)
 }
 
 func ChangeStatus(transactionID string, status string) apierrors.ApiError {

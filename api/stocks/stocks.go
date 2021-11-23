@@ -2,17 +2,15 @@ package stocks
 
 import (
 	"github.com/Kaibling/psychic-octo-stock/middleware"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
 )
 
-func AddRoute(router *gin.RouterGroup) *gin.RouterGroup {
-	r := router.Group("stocks")
-	{
-		r.POST("/users/:userid", middleware.Authorization, stockPost)
-		r.GET("", middleware.Authorization, stocksGet)
-		r.PUT(":id", middleware.Authorization, stockPut)
-		r.DELETE(":id", middleware.Authorization, stockDelete)
-		r.GET(":id", middleware.Authorization, stockGet)
-	}
+func AddRoute() chi.Router {
+	r := chi.NewRouter()
+	r.With(middleware.Authorization).Post("/users/{userid}", stockPost)
+	r.With(middleware.Authorization).Get("/", stocksGet)
+	r.With(middleware.Authorization).Put("/{id}", stockPut)
+	r.With(middleware.Authorization).Delete("/{id}", stockDelete)
+	r.With(middleware.Authorization).Get("/{id}", stockGet)
 	return r
 }

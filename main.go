@@ -1,8 +1,14 @@
 package main
 
-import "github.com/Kaibling/psychic-octo-stock/api"
+import (
+	"log"
+	"net/http"
+
+	"github.com/Kaibling/psychic-octo-stock/api"
+)
 
 func main() {
 	r := api.AssembleServer()
-	r.Run()
+	log.Println("=== Started ===")
+	http.ListenAndServe("0.0.0.0:8080", r)
 }

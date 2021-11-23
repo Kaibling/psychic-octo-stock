@@ -1,13 +1,9 @@
 package authentication
 
-import (
-	"github.com/gin-gonic/gin"
-)
+import "github.com/go-chi/chi"
 
-func AddRoute(router *gin.RouterGroup) *gin.RouterGroup {
-	r := router.Group("login")
-	{
-		r.POST("", login)
-	}
+func AddRoute() chi.Router {
+	r := chi.NewRouter()
+	r.Post("/login", login)
 	return r
 }

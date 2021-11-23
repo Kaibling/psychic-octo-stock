@@ -5,16 +5,17 @@ import (
 	"github.com/Kaibling/psychic-octo-stock/api/stocks"
 	"github.com/Kaibling/psychic-octo-stock/api/transactions"
 	"github.com/Kaibling/psychic-octo-stock/api/users"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
 )
 
-func BuildRouter(router *gin.Engine) *gin.RouterGroup {
-	v1 := router.Group("/api/v1")
-	{
-		users.AddRoute(v1)
-		stocks.AddRoute(v1)
-		transactions.AddRoute(v1)
-		authentication.AddRoute(v1)
-	}
-	return v1
+func BuildRouter(r *chi.Mux) *chi.Mux {
+
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Mount("/users", users.AddRoute())
+		r.Mount("/stocks", stocks.AddRoute())
+		r.Mount("/transactions", transactions.AddRoute())
+		r.Mount("/", authentication.AddRoute())
+	})
+
+	return r
 }

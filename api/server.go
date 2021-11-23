@@ -2,6 +2,9 @@ package api
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 
@@ -10,10 +13,12 @@ import (
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
-func AssembleServer() *gin.Engine {
+func AssembleServer() *chi.Mux {
 	configData := config.NewConfig()
 	configData.LogEnv()
 	sdb := database.NewDatabaseConnector(configData.DBUrl)
@@ -29,17 +34,26 @@ func AssembleServer() *gin.Engine {
 	repositories.SetStockRepo(stockRepo)
 	transactionRepo := repositories.NewTransactionRepository(sdb)
 	repositories.SetTransactionRepo(transactionRepo)
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(injectData("userRepo", userRepo))
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
 	r.Use(injectData("hmacSecret", []byte("asdassasdsdsdswew")))
 	BuildRouter(r)
+	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		log.Printf("%s %s\n", method, route)
+		return nil
+	}
+
+	if err := chi.Walk(r, walkFunc); err != nil {
+		fmt.Printf("Logging err: %s\n", err.Error())
+	}
 	return r
 }
-func TestAssemblyRoute() (*gin.Engine, *repositories.UserRepository, *repositories.StockRepository, *repositories.TransactionRepository, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
+func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.StockRepository, *repositories.TransactionRepository, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
 	configData := config.NewConfig()
 	configData.LogEnv()
 	sdb := database.NewDatabaseConnector(configData.DBUrl)
@@ -58,9 +72,8 @@ func TestAssemblyRoute() (*gin.Engine, *repositories.UserRepository, *repositori
 	repositories.SetStockRepo(stockRepo)
 	transactionRepo := repositories.NewTransactionRepository(sdb)
 	repositories.SetTransactionRepo(transactionRepo)
-	r := gin.New()
-	r.Use(gin.Logger())
-	r.Use(gin.Recovery())
+	r := chi.NewRouter()
+	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(injectData("userRepo", userRepo))
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
@@ -71,6 +84,7 @@ func TestAssemblyRoute() (*gin.Engine, *repositories.UserRepository, *repositori
 
 		req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
 		req.Header.Set("Authorization", "Bearer "+token)
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		return w
@@ -79,9 +93,12 @@ func TestAssemblyRoute() (*gin.Engine, *repositories.UserRepository, *repositori
 	return r, userRepo, stockRepo, transactionRepo, PerformTestRequest
 }
 
-func injectData(key string, data interface{}) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Set(key, data)
-		c.Next()
+func injectData(key string, data interface{}) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), key, data)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+		return http.HandlerFunc(fn)
 	}
 }
