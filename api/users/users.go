@@ -7,10 +7,10 @@ import (
 
 func AddRoute() chi.Router {
 	r := chi.NewRouter()
-	r.Post("/", userPost)
-	r.Get("/", usersGet)
+	r.With(middleware.Authorization).Post("/", userPost)
+	r.With(middleware.Authorization).Get("/", usersGet)
 	r.With(middleware.Authorization).Put("/{id}", userPut)
 	r.With(middleware.Authorization).Delete("/{id}", userDelete)
-	r.Get("/{id}", userGet)
+	r.With(middleware.Authorization).Get("/{id}", userGet)
 	return r
 }
