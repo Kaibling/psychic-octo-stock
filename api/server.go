@@ -54,6 +54,11 @@ func AssembleServer() *chi.Mux {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
+
+	testUser := &models.User{Username: "admin", Password: "testpassword"}
+	userRepo.Add(testUser)
+	token, _ := utility.GenerateToken(testUser.Username, []byte("asdassasdsdsdswew"))
+
 	BuildRouter(r)
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		log.Printf("%s %s\n", method, route)
@@ -63,6 +68,7 @@ func AssembleServer() *chi.Mux {
 	if err := chi.Walk(r, walkFunc); err != nil {
 		fmt.Printf("Logging err: %s\n", err.Error())
 	}
+	fmt.Printf("user: %s\npassword:%s\ntoken:%s", "admin", "testpassword", token)
 	return r
 }
 func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.StockRepository, *repositories.TransactionRepository, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
@@ -76,8 +82,6 @@ func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.
 	sdb.Migrate(&models.Transaction{})
 
 	userRepo := repositories.NewUserRepository(sdb)
-	testUser := &models.User{Username: "testUser", Password: "testpassword"}
-	userRepo.Add(testUser)
 
 	repositories.SetUserRepo(userRepo)
 	stockRepo := repositories.NewStockRepository(sdb)
@@ -90,6 +94,8 @@ func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
 	r.Use(injectData("hmacSecret", []byte("asdassasdsdsdswew")))
+	testUser := &models.User{Username: "testUser", Password: "testpassword"}
+	userRepo.Add(testUser)
 	token, _ := utility.GenerateToken(testUser.Username, []byte("asdassasdsdsdswew"))
 	BuildRouter(r)
 	PerformTestRequest := func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder {
