@@ -35,7 +35,9 @@ func NewDatabaseConnector(url string) *GormConnector {
 }
 
 func (s *GormConnector) Connect() apierrors.ApiError {
-	db, err := gorm.Open(sqlite.Open(s.url), &gorm.Config{Logger: logger.Default.LogMode(logger.Info)})
+	config := &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
+	//config := &gorm.Config{}
+	db, err := gorm.Open(sqlite.Open(s.url), config)
 	if err != nil {
 		return apierrors.NewGeneralError(err)
 		//panic("failed to connect database")

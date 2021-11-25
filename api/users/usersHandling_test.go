@@ -2,18 +2,27 @@ package users_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
 
 var URL = "/api/v1/users"
 
 func TestCreateUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test",
 		Email:    "abc@abc.ac",
@@ -35,7 +44,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateUserNotUniqe(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test2",
 		Email:    "abc2@abc.ac",
@@ -66,7 +75,7 @@ func TestCreateUserNotUniqe(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
@@ -105,7 +114,7 @@ func TestUpdateUser(t *testing.T) {
 
 }
 func TestUpdateNoneExistingUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	userID := "thisdoesnotexists"
 	updateUser := models.User{
 		Address: "somethingNew",
@@ -116,7 +125,7 @@ func TestUpdateNoneExistingUser(t *testing.T) {
 
 }
 func TestGetAllUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
@@ -158,7 +167,7 @@ func TestGetAllUser(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
@@ -181,14 +190,14 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteNoneExistingUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
 
 func TestGetUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",
 		Email:    "abc3@abc.ac",
@@ -218,8 +227,9 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestUserFunds(t *testing.T) {
-	_, userRepo, _, _, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "a@a.a"}
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	userRepo.Add(testUser)
 	userFunds, err := userRepo.FundsByID(testUser.ID)
 	assert.Nil(t, err)

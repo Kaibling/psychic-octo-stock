@@ -2,19 +2,29 @@ package authentication_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
 	"github.com/Kaibling/psychic-octo-stock/api/authentication"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
 
 var URL = "/api/v1/login"
 
 func TestLogin(t *testing.T) {
-	r, userRepo, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "asd.asd@asd.as"}
 
 	testLogin := authentication.UserLogin{
@@ -34,7 +44,8 @@ func TestLogin(t *testing.T) {
 }
 
 func TestLoginWrongPassword(t *testing.T) {
-	r, userRepo, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "asd.asd@asd.as"}
 
 	testLogin := authentication.UserLogin{
@@ -48,7 +59,8 @@ func TestLoginWrongPassword(t *testing.T) {
 }
 
 func TestLoginWrongUsername(t *testing.T) {
-	r, userRepo, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "asd.asd@asd.as"}
 
 	testLogin := authentication.UserLogin{

@@ -2,19 +2,30 @@ package transactions_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
 	"github.com/Kaibling/psychic-octo-stock/api/transactions"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
 
 var URL = "/api/v1/transactions"
 
 func TestCreate(t *testing.T) {
-	r, userRepo, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -79,7 +90,11 @@ func TestCreate(t *testing.T) {
 // }
 
 func TestGetAll(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -125,7 +140,10 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -147,14 +165,17 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteNoneExisting(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
 
 func TestGet(t *testing.T) {
-	r, userRepo, stockRepo, transactionRepo, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -183,7 +204,10 @@ func TestGet(t *testing.T) {
 }
 
 func TestAtomicFunction(t *testing.T) {
-	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -207,7 +231,10 @@ func TestAtomicFunction(t *testing.T) {
 }
 
 func TestAtomicFunctionRollback(t *testing.T) {
-	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Address: "abc-street 123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testUser)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -233,8 +260,10 @@ func TestAtomicFunctionRollback(t *testing.T) {
 // status
 
 func TestStatusSetActive(t *testing.T) {
-
-	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testSeller := &models.User{Username: "Jack", Password: "abc123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testSeller)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -267,8 +296,10 @@ func TestStatusSetActive(t *testing.T) {
 }
 
 func TestStatusSetPending(t *testing.T) {
-
-	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testSeller := &models.User{Username: "Jack", Password: "abc123"}
 	userRepo.Add(testSeller)
 	testStock := &models.Stock{Name: "Stock1", Quantity: 123}
@@ -294,8 +325,10 @@ func TestStatusSetPending(t *testing.T) {
 }
 
 func TestStatusSetClosed(t *testing.T) {
-
-	_, userRepo, stockRepo, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testSeller := &models.User{Username: "Jack", Password: "abc123", Email: "aba", Funds: 0}
 	err := userRepo.Add(testSeller)
 	assert.Nil(t, err)
@@ -329,7 +362,8 @@ func TestStatusSetClosed(t *testing.T) {
 }
 
 func TestTransactionCosts(t *testing.T) {
-	_, _, _, transactionRepo, _ := api.TestAssemblyRoute()
+	_, repos, _ := api.TestAssemblyRoute()
+	transactionRepo := repos["transactionRepo"].(*repositories.TransactionRepository)
 	testObject := models.Transaction{
 		Quantity: 12,
 		Type:     "SELL",

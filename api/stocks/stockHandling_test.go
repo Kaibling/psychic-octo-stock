@@ -2,18 +2,28 @@ package stocks_test
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestMain(m *testing.M) {
+	log.SetOutput(ioutil.Discard)
+	os.Exit(m.Run())
+}
 
 var URL = "/api/v1/stocks"
 
 func TestCreate(t *testing.T) {
-	r, userRepo, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	testUser := &models.User{Username: "Jack", Password: "abc123", Email: "abc.abc@abc.ab"}
 	userRepo.Add(testUser)
 	testStock := models.Stock{
@@ -34,7 +44,7 @@ func TestCreate(t *testing.T) {
 
 }
 func TestCreateMissingUser(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	testStock := models.Stock{
 		Name: "Test",
 	}
@@ -53,8 +63,9 @@ func TestCreateMissingUser(t *testing.T) {
 }
 
 func TestCreateNotUniqe(t *testing.T) {
-	r, userRepo, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
 	testUser := &models.User{Username: "Jack", Password: "abc123", Email: "abc.abc@abc.ab"}
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	userRepo.Add(testUser)
 	testStock := models.Stock{
 		Name: "Test2",
@@ -84,8 +95,9 @@ func TestCreateNotUniqe(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	r, _, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
 	testStock := &models.Stock{Name: "Test3"}
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
 	stockRepo.Add(testStock)
 	stockID := testStock.ID
 
@@ -107,7 +119,7 @@ func TestUpdate(t *testing.T) {
 
 }
 func TestUpdateNoneExisting(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	objectID := "thisdoesnotexists"
 	updateObject := models.Stock{
 		Name: "somethingNew",
@@ -118,7 +130,8 @@ func TestUpdateNoneExisting(t *testing.T) {
 
 }
 func TestGetAll(t *testing.T) {
-	r, _, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
 	testObject := &models.Stock{Name: "Test3"}
 	stockRepo.Add(testObject)
 	testObject2 := &models.Stock{Name: "Test4"}
@@ -144,7 +157,8 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	r, _, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
 	testObject := &models.Stock{Name: "Test3"}
 	stockRepo.Add(testObject)
 	objectID := testObject.ID
@@ -157,14 +171,15 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteNoneExisting(t *testing.T) {
-	r, _, _, _, performTestRequest := api.TestAssemblyRoute()
+	r, _, performTestRequest := api.TestAssemblyRoute()
 	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
 
 func TestGet(t *testing.T) {
-	r, _, stockRepo, _, performTestRequest := api.TestAssemblyRoute()
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	stockRepo := repos["stockRepo"].(*repositories.StockRepository)
 	testObject := &models.Stock{Name: "Test3"}
 	stockRepo.Add(testObject)
 	objectID := testObject.ID

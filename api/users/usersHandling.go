@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/Kaibling/psychic-octo-stock/lib/transmission"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
@@ -11,39 +12,42 @@ import (
 )
 
 func userPost(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	var newUser models.User
 	erra := json.NewDecoder(r.Body).Decode(&newUser)
 	if erra != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		response.Send("", "post data not parsable", http.StatusUnprocessableEntity)
 		return
 	}
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	if err := userRepo.Add(&newUser); err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	//todo proper return schema
 	newUser.Password = ""
-	utility.SendResponse(w, r, &models.Envelope{Data: newUser, Message: ""}, http.StatusCreated)
-	return
+	response.Send(newUser, "", http.StatusCreated)
 }
+
 func usersGet(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 
 	userList, err := userRepo.GetAll()
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	utility.SendResponse(w, r, &models.Envelope{Data: userList, Message: ""}, http.StatusOK)
-	return
+	response.Send(userList, "", http.StatusOK)
 }
+
 func userPut(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	userID := chi.URLParam(r, "id")
 	var updateUser map[string]interface{}
 	erra := json.NewDecoder(r.Body).Decode(&updateUser)
 	if erra != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		response.Send("", "post data not parsable", http.StatusUnprocessableEntity)
 		return
 
 	}
@@ -54,36 +58,37 @@ func userPut(w http.ResponseWriter, r *http.Request) {
 	userRepo.UpdateWithMap(updateUser)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: ""}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 
-	utility.SendResponse(w, r, &models.Envelope{Data: loadedUser, Message: ""}, http.StatusOK)
-	return
+	response.Send(loadedUser, "", http.StatusOK)
 }
+
 func userDelete(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	userID := chi.URLParam(r, "id")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: ""}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	if err := userRepo.DeleteByObject(loadedUser); err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	utility.SendResponse(w, r, nil, http.StatusNoContent)
-	return
+	response.Send("", "", http.StatusNoContent)
 }
+
 func userGet(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	userID := chi.URLParam(r, "id")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	utility.SendResponse(w, r, &models.Envelope{Data: loadedUser, Message: ""}, http.StatusOK)
-	return
+	response.Send(loadedUser, "", http.StatusOK)
 }

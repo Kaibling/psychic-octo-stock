@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
-	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-chi/render"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -55,9 +53,4 @@ func GetContext(key string, r *http.Request) interface{} {
 		//return "", apierrors.NewClientError(errors.New("context parameter '" + key + "' missing"))
 	}
 	return parameter
-}
-
-func SendResponse(w http.ResponseWriter, r *http.Request, data *models.Envelope, httpStatusCode int) {
-	render.Status(r, httpStatusCode)
-	render.Respond(w, r, data)
 }

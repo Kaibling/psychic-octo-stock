@@ -48,11 +48,6 @@ var transactionTypes = []string{"SELL", "BUY"}
 var transactionStatus = []string{"PENDING", "ACTIVE", "CLOSED", "CANCELLED"}
 var TransactionSelect = []string{"ID", " seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "Status"}
 
-type Envelope struct {
-	Data    interface{} `json:"data"`
-	Message string      `json:"message"`
-}
-
 func IsTransactionsType(data string) bool {
 	return contains(transactionTypes, data)
 }

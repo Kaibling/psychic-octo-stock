@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/Kaibling/psychic-octo-stock/lib/transmission"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
@@ -14,63 +15,66 @@ import (
 )
 
 func transactionPost(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	var newTransaction models.Transaction
 	erra := json.NewDecoder(r.Body).Decode(&newTransaction)
 	if erra != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "post data not parsable"}, http.StatusUnprocessableEntity)
+		response.Send("", "post data not parsable", http.StatusUnprocessableEntity)
 		return
 
 	}
 	if !models.IsTransactionsType(newTransaction.Type) {
 		err := apierrors.NewClientError(errors.New("transactiontype is neither 'BUY' or 'SELL'"))
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	//todo check if seller has enoigh stock
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	if err := transactionRepo.Add(&newTransaction); err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	//todo proper return schema
-	env := models.Envelope{Data: newTransaction, Message: ""}
-	utility.SendResponse(w, r, &env, http.StatusCreated)
+	response.Send(newTransaction, "", http.StatusCreated)
 }
 func transactionsGet(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	transactionList, err := transactionRepo.GetAll()
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	env := models.Envelope{Data: transactionList, Message: ""}
-	utility.SendResponse(w, r, &env, http.StatusOK)
+
+	response.Send(transactionList, "", http.StatusOK)
 }
 
 func transactionDelete(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	transactionID := chi.URLParam(r, "id")
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	if err := transactionRepo.DeleteByObject(loadedUser); err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	utility.SendResponse(w, r, nil, http.StatusNoContent)
+	response.Send("", "", http.StatusNoContent)
 }
+
 func transactionGet(w http.ResponseWriter, r *http.Request) {
+	response := transmission.GetOrCreateResponse(w, r)
 	transactionID := chi.URLParam(r, "id")
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)
 	if err != nil {
-		utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, err.HttpStatus())
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	env := models.Envelope{Data: loadedUser, Message: ""}
-	utility.SendResponse(w, r, &env, http.StatusOK)
+	response.Send(loadedUser, "", http.StatusOK)
 }
 
 func ChangeStatus(transactionID string, status string) apierrors.ApiError {

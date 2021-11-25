@@ -19,19 +19,18 @@ import (
 	"github.com/lucsky/cuid"
 )
 
-func AssembleServer() *chi.Mux {
+func baseServer() (*chi.Mux, database.DBConnector, string) {
 	configData := config.NewConfig()
 	configData.LogEnv()
 	db := database.NewDatabaseConnector(configData.DBUrl)
 	db.Connect()
-	migrateDB(db)
+	token := migrateDB(db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(injectData("hmacSecret", []byte(config.Config.TokenSecret)))
-	initRepos(r, db)
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -41,31 +40,20 @@ func AssembleServer() *chi.Mux {
 		MaxAge:           300,
 	}))
 
+	return r, db, token
+}
+
+func AssembleServer() *chi.Mux {
+	r, db, _ := baseServer()
+	initRepos(r, db)
+
 	BuildRouter(r)
 	displayRoutes(r)
 	return r
 }
-func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.StockRepository, *repositories.TransactionRepository, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
-	configData := config.NewConfig()
-	configData.LogEnv()
-	db := database.NewDatabaseConnector(configData.DBUrl)
-	db.Connect()
-	token := migrateDB(db)
-
-	userRepo := repositories.NewUserRepository(db)
-	repositories.SetUserRepo(userRepo)
-	stockRepo := repositories.NewStockRepository(db)
-	repositories.SetStockRepo(stockRepo)
-	transactionRepo := repositories.NewTransactionRepository(db)
-	repositories.SetTransactionRepo(transactionRepo)
-
-	r := chi.NewRouter()
-	r.Use(render.SetContentType(render.ContentTypeJSON))
-	r.Use(injectData("userRepo", userRepo))
-	r.Use(injectData("stockRepo", stockRepo))
-	r.Use(injectData("transactionRepo", transactionRepo))
-	r.Use(injectData("hmacSecret", []byte(config.Config.TokenSecret)))
-	BuildRouter(r)
+func TestAssemblyRoute() (*chi.Mux, map[string]interface{}, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
+	r, db, token := baseServer()
+	repos := initRepos(r, db)
 	PerformTestRequest := func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder {
 
 		req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
@@ -75,8 +63,8 @@ func TestAssemblyRoute() (*chi.Mux, *repositories.UserRepository, *repositories.
 		r.ServeHTTP(w, req)
 		return w
 	}
-
-	return r, userRepo, stockRepo, transactionRepo, PerformTestRequest
+	BuildRouter(r)
+	return r, repos, PerformTestRequest
 }
 
 func injectData(key string, data interface{}) func(next http.Handler) http.Handler {
@@ -108,17 +96,23 @@ func migrateDB(db database.DBConnector) string {
 	return ""
 }
 
-func initRepos(r *chi.Mux, db database.DBConnector) {
+func initRepos(r *chi.Mux, db database.DBConnector) map[string]interface{} {
+	repos := map[string]interface{}{}
 	userRepo := repositories.NewUserRepository(db)
 	repositories.SetUserRepo(userRepo)
+	repos["userRepo"] = userRepo
 	stockRepo := repositories.NewStockRepository(db)
 	repositories.SetStockRepo(stockRepo)
+	repos["stockRepo"] = stockRepo
 	transactionRepo := repositories.NewTransactionRepository(db)
 	repositories.SetTransactionRepo(transactionRepo)
+	repos["transactionRepo"] = transactionRepo
 
 	r.Use(injectData("userRepo", userRepo))
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
+	return repos
+
 }
 
 func displayRoutes(r *chi.Mux) {
@@ -126,8 +120,25 @@ func displayRoutes(r *chi.Mux) {
 		log.Printf("%s %s\n", method, route)
 		return nil
 	}
-
 	if err := chi.Walk(r, walkFunc); err != nil {
 		log.Printf("Logging err: %s\n", err.Error())
 	}
 }
+
+// func init() {
+// 	// Log as JSON instead of the default ASCII formatter.
+// 	log.SetFormatter(&log.JSONFormatter{})
+// 	log.SetFormatter(
+
+// 	&easy.Formatter{
+// 		TimestampFormat: "2006-01-02 15:04:05",
+// 		LogFormat:       "[%lvl%]: %time% - %msg%",
+// 	})
+
+// 	// Output to stdout instead of the default stderr
+// 	// Can be any io.Writer, see below for File example
+// 	log.SetOutput(os.Stdout)
+
+// 	// Only log the warning severity or above.
+// 	log.SetLevel(log.DebugLevel)
+// }

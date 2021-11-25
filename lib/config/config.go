@@ -23,7 +23,8 @@ func NewConfig() *Configuration {
 	dbURL := getEnv("DBURL", "file::memory:")
 	tokenSecret := getEnv("TOKEN_SECRECT", "tokensecretreally")
 	env := getEnv("ENV", "DEV")
-	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret,Env: env}
+
+	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret, Env: env}
 	return Config
 }
 
