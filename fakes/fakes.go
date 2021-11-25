@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 
 	"github.com/manveru/faker"
 )
@@ -28,22 +29,18 @@ type stock struct {
 	Quantity int
 }
 
+var BASEURL string
+var TOKEN string
+
 func main() {
-	baseUrl := "http://localhost:8080/api/v1/"
-	userArray := addFakeUser(baseUrl, 150)
-
-	for _, v := range userArray {
-		fmt.Println(beautifyJson(v))
-	}
-	stockArray := addFakeStock(baseUrl, 20, userArray)
-
-	for _, v := range stockArray {
-		fmt.Println(beautifyJson(v))
-	}
-
+	args := os.Args[1:]
+	BASEURL = args[0]
+	TOKEN = args[1]
+	userArray := addFakeUser(13)
+	addFakeStock(5, userArray)
 }
 
-func addFakeUser(url string, count int) []*user {
+func addFakeUser(count int) []*user {
 	var returnArray []*user
 	fake, err := faker.New("en")
 	if err != nil {
@@ -56,7 +53,7 @@ func addFakeUser(url string, count int) []*user {
 			fmt.Println(err)
 			continue
 		}
-		responseByte := postRequest(url+"users", newUserJson)
+		responseByte := postRequest(BASEURL+"users", newUserJson)
 		env := envelope{}
 		err = json.Unmarshal(responseByte, &env)
 		if err != nil {
@@ -71,7 +68,7 @@ func addFakeUser(url string, count int) []*user {
 	}
 	return returnArray
 }
-func addFakeStock(url string, count int, userArray []*user) []*stock {
+func addFakeStock(count int, userArray []*user) []*stock {
 	var returnArray []*stock
 	fake, err := faker.New("en")
 	if err != nil {
@@ -84,7 +81,7 @@ func addFakeStock(url string, count int, userArray []*user) []*stock {
 			fmt.Println(err)
 			continue
 		}
-		responseByte := postRequest(url+"stocks/users/"+userArray[i].ID, newStockJson)
+		responseByte := postRequest(BASEURL+"stocks/users/"+userArray[i].ID, newStockJson)
 		env := envelope{}
 		err = json.Unmarshal(responseByte, &env)
 		if err != nil {
@@ -105,7 +102,7 @@ func postRequest(url string, jsonStr []byte) []byte {
 	if err != nil {
 		fmt.Println(err)
 	}
-	//req.Header.Set("X-Custom-Header", "myvalue")
+	req.Header.Set("Authorization", "Bearer " + TOKEN)
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}

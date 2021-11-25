@@ -16,12 +16,12 @@ func Authorization(next http.Handler) http.Handler {
 		hmacSampleSecret, _ := utility.GetContext("hmacSecret", r).([]byte)
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
-			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "Could not find Authorization header"}, http.StatusBadRequest)
+			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "Could not find Authorization header"}, http.StatusUnauthorized)
 			return
 		}
 		tokenString := strings.TrimPrefix(auth, "Bearer ")
 		if tokenString == auth {
-			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "Could not find bearer token in Authorization header"}, http.StatusBadRequest)
+			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "Could not find bearer token in Authorization header"}, http.StatusUnauthorized)
 			return
 		}
 
@@ -34,14 +34,14 @@ func Authorization(next http.Handler) http.Handler {
 		})
 		if err != nil {
 			//log.Infof("Bad Thing happened: %s", err.Error())
-			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, http.StatusBadGateway)
+			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: err.Error()}, http.StatusUnauthorized)
 			return
 		}
 
 		claims, ok := token.Claims.(jwt.MapClaims)
 		if !ok || !token.Valid {
 			//log.Infoln("token invalid")
-			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "token invalid"}, http.StatusUnauthorized)
+			utility.SendResponse(w, r, &models.Envelope{Data: "", Message: "token invalid"}, http.StatusForbidden)
 			return
 		}
 		ctx := context.WithValue(r.Context(), "userName", claims["name"])

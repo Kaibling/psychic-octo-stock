@@ -5,7 +5,7 @@
 *.so
 *.dylib
 *.db
-
+psychic-octo-stock
 # Test binary, built with `go test -c`
 *.test
 

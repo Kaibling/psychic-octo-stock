@@ -11,6 +11,7 @@ var Config *Configuration
 type Configuration struct {
 	DBUrl       string
 	TokenSecret string
+	Env         string
 }
 
 func NewConfig() *Configuration {
@@ -21,7 +22,8 @@ func NewConfig() *Configuration {
 	//dbURL = filepath.Join(path, "local.db")
 	dbURL := getEnv("DBURL", "file::memory:")
 	tokenSecret := getEnv("TOKEN_SECRECT", "tokensecretreally")
-	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret}
+	env := getEnv("ENV", "DEV")
+	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret,Env: env}
 	return Config
 }
 
