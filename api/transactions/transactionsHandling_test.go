@@ -37,7 +37,7 @@ func TestCreate(t *testing.T) {
 		Type:     "SELL",
 	}
 	byteObject, _ := json.Marshal(testObject)
-	w := performTestRequest(r, "POST", URL, byteObject)
+	w := performTestRequest(r, "POST", URL, byteObject, nil)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
@@ -113,7 +113,7 @@ func TestGetAll(t *testing.T) {
 		Type:     "BUY",
 	}
 	transactionRepo.Add(&testObject2)
-	w := performTestRequest(r, "GET", URL, nil)
+	w := performTestRequest(r, "GET", URL, nil, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response map[string]interface{}
@@ -157,16 +157,16 @@ func TestDelete(t *testing.T) {
 	transactionRepo.Add(&testObject)
 	objectID := testObject.ID
 
-	deleteResponse := performTestRequest(r, "DELETE", URL+"/"+objectID, nil)
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/"+objectID, nil, nil)
 	assert.Equal(t, http.StatusNoContent, deleteResponse.Code)
 
-	deleteResponse = performTestRequest(r, "DELETE", URL+"/"+objectID, nil)
+	deleteResponse = performTestRequest(r, "DELETE", URL+"/"+objectID, nil, nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 }
 
 func TestDeleteNoneExisting(t *testing.T) {
 	r, _, performTestRequest := api.TestAssemblyRoute()
-	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil)
+	deleteResponse := performTestRequest(r, "DELETE", URL+"/adawfeefsse", nil, nil)
 	assert.Equal(t, http.StatusNotFound, deleteResponse.Code)
 
 }
@@ -189,7 +189,7 @@ func TestGet(t *testing.T) {
 	transactionRepo.Add(&testObject)
 	objectID := testObject.ID
 
-	getResponse := performTestRequest(r, "GET", URL+"/"+objectID, nil)
+	getResponse := performTestRequest(r, "GET", URL+"/"+objectID, nil, nil)
 	assert.Equal(t, http.StatusOK, getResponse.Code)
 
 	var response map[string]interface{}

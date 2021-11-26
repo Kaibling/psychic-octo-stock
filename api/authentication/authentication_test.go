@@ -33,7 +33,7 @@ func TestLogin(t *testing.T) {
 	}
 	userRepo.Add(testUser)
 	byte_User, _ := json.Marshal(testLogin)
-	w := performTestRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
 	assert.Equal(t, http.StatusOK, w.Code)
 	var createResponse map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &createResponse)
@@ -54,7 +54,7 @@ func TestLoginWrongPassword(t *testing.T) {
 	}
 	userRepo.Add(testUser)
 	byte_User, _ := json.Marshal(testLogin)
-	w := performTestRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 }
 
@@ -69,7 +69,7 @@ func TestLoginWrongUsername(t *testing.T) {
 	}
 	userRepo.Add(testUser)
 	byte_User, _ := json.Marshal(testLogin)
-	w := performTestRequest(r, "POST", URL, byte_User)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 }

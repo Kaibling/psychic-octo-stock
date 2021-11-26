@@ -51,14 +51,19 @@ func AssembleServer() *chi.Mux {
 	displayRoutes(r)
 	return r
 }
-func TestAssemblyRoute() (*chi.Mux, map[string]interface{}, func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder) {
+func TestAssemblyRoute() (*chi.Mux, map[string]interface{}, func(r http.Handler, method, path string, jsonStr []byte, headers *map[string]string) *httptest.ResponseRecorder) {
 	r, db, token := baseServer()
 	repos := initRepos(r, db)
-	PerformTestRequest := func(r http.Handler, method, path string, jsonStr []byte) *httptest.ResponseRecorder {
+	PerformTestRequest := func(r http.Handler, method, path string, jsonStr []byte, headers *map[string]string) *httptest.ResponseRecorder {
 
 		req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
 		req.Header.Set("Authorization", "Bearer "+token)
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		if headers != nil {
+			for k, v := range *headers {
+				req.Header.Set(k, v)
+			}
+		}
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		return w

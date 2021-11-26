@@ -21,7 +21,7 @@ type Response struct {
 }
 
 func NewResponse(w http.ResponseWriter, r *http.Request) *Response {
-	envelope := &Envelope{}
+
 	var requestID string
 	clientRequestID := r.Header.Get("X-REQUEST-ID")
 	if clientRequestID != "" {
@@ -29,6 +29,7 @@ func NewResponse(w http.ResponseWriter, r *http.Request) *Response {
 	} else {
 		requestID = cuid.New()
 	}
+	envelope := &Envelope{RequestID: requestID}
 	return &Response{requestID: requestID, envelope: envelope, r: r, w: w}
 }
 
@@ -46,10 +47,11 @@ func (s *Response) Send(data interface{}, message string, httpStatus int) {
 	render.Respond(s.w, s.r, sendEnv)
 }
 
-func SendResponse(w http.ResponseWriter, r *http.Request, data *Envelope, httpStatusCode int) {
-	render.Status(r, httpStatusCode)
-	render.Respond(w, r, data)
-}
+// func SendResponse(w http.ResponseWriter, r *http.Request, data *Envelope, httpStatusCode int) {
+// 	render.Status(r, httpStatusCode)
+
+// 	render.Respond(w, r, data)
+// }
 
 func GetOrCreateResponse(w http.ResponseWriter, r *http.Request) *Response {
 	parameter := r.Context().Value("responseObject")
