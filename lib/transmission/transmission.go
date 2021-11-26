@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-	"github.com/lucsky/cuid"
+	log "github.com/sirupsen/logrus"
 )
 
 type Envelope struct {
@@ -20,15 +20,7 @@ type Response struct {
 	envelope  *Envelope
 }
 
-func NewResponse(w http.ResponseWriter, r *http.Request) *Response {
-
-	var requestID string
-	clientRequestID := r.Header.Get("X-REQUEST-ID")
-	if clientRequestID != "" {
-		requestID = clientRequestID
-	} else {
-		requestID = cuid.New()
-	}
+func NewResponse(w http.ResponseWriter, r *http.Request, requestID string) *Response {
 	envelope := &Envelope{RequestID: requestID}
 	return &Response{requestID: requestID, envelope: envelope, r: r, w: w}
 }
@@ -45,6 +37,11 @@ func (s *Response) Send(data interface{}, message string, httpStatus int) {
 	}
 	render.Status(s.r, httpStatus)
 	render.Respond(s.w, s.r, sendEnv)
+	log.Debug()
+}
+
+func (s *Response) GetRequestId() string {
+	return s.requestID
 }
 
 // func SendResponse(w http.ResponseWriter, r *http.Request, data *Envelope, httpStatusCode int) {
@@ -53,10 +50,7 @@ func (s *Response) Send(data interface{}, message string, httpStatus int) {
 // 	render.Respond(w, r, data)
 // }
 
-func GetOrCreateResponse(w http.ResponseWriter, r *http.Request) *Response {
+func GetResponse(w http.ResponseWriter, r *http.Request) *Response {
 	parameter := r.Context().Value("responseObject")
-	if parameter == nil {
-		return NewResponse(w, r)
-	}
 	return parameter.(*Response)
 }
