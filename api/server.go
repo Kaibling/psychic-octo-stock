@@ -13,6 +13,7 @@ import (
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/modules"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/v5/middleware"
@@ -23,14 +24,14 @@ import (
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
-func baseServer() (*chi.Mux, database.DBConnector, string) {
+func baseServer() (*chi.Mux, database.DBConnector) {
 	configData := config.NewConfig()
 	configData.LogEnv()
 	logger := initLogging()
 
 	db := database.NewDatabaseConnector(configData.DBUrl)
 	db.Connect()
-	token := migrateDB(db)
+	migrateDB(db)
 
 	r := chi.NewRouter()
 
@@ -48,20 +49,23 @@ func baseServer() (*chi.Mux, database.DBConnector, string) {
 		MaxAge:           300,
 	}))
 
-	return r, db, token
+	return r, db
 }
 
 func AssembleServer() *chi.Mux {
-	r, db, _ := baseServer()
+	r, db := baseServer()
 	initRepos(r, db)
-
+	initModules(r)
 	BuildRouter(r)
 	displayRoutes(r)
 	return r
 }
 func TestAssemblyRoute() (*chi.Mux, map[string]interface{}, func(r http.Handler, method, path string, jsonStr []byte, headers *map[string]string) *httptest.ResponseRecorder) {
-	r, db, token := baseServer()
-	repos := initRepos(r, db)
+	r, db := baseServer()
+	repos, token := initRepos(r, db)
+	ccm := modules.NewTestCCM()
+	modules.SetGlobalCCM(ccm)
+	r.Use(injectData("ccm", ccm))
 	PerformTestRequest := func(r http.Handler, method, path string, jsonStr []byte, headers *map[string]string) *httptest.ResponseRecorder {
 
 		req, _ := http.NewRequest(method, path, bytes.NewBuffer(jsonStr))
@@ -98,19 +102,10 @@ func migrateDB(db database.DBConnector) string {
 	db.Migrate(&models.StockToUser{})
 	db.Migrate(&models.Transaction{})
 
-	if err := db.FindByWhere(&models.User{}, "username = ?", []interface{}{"admin"}); err != nil {
-		fmt.Println("no admin found. Creating one")
-		password := cuid.New()
-		admin := &models.User{Username: "admin", Password: password, Email: "admin@local"}
-		db.Add(admin)
-		token, _ := utility.GenerateToken(admin.Username, []byte(config.Config.TokenSecret))
-		fmt.Printf("user: %s, password: %s\ntoken: %s\n", admin.Username, password, token)
-		return token
-	}
 	return ""
 }
 
-func initRepos(r *chi.Mux, db database.DBConnector) map[string]interface{} {
+func initRepos(r *chi.Mux, db database.DBConnector) (map[string]interface{}, string) {
 	repos := map[string]interface{}{}
 	userRepo := repositories.NewUserRepository(db)
 	repositories.SetUserRepo(userRepo)
@@ -129,8 +124,25 @@ func initRepos(r *chi.Mux, db database.DBConnector) map[string]interface{} {
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
 	r.Use(injectData("tokenRepo", tokenRepo))
-	return repos
 
+	if err := db.FindByWhere(&models.User{}, "username = ?", []interface{}{"admin"}); err != nil {
+		fmt.Println("no admin found. Creating one")
+		password := cuid.New()
+		adminID := cuid.New()
+		admin := &models.User{ID: adminID, Username: "admin", Password: password, Email: "admin@local"}
+		db.Add(admin)
+		token, _ := tokenRepo.GenerateAndAddToken(adminID, []byte(config.Config.TokenSecret), 0)
+		fmt.Printf("user: %s, password: %s\ntoken: %s\n", admin.Username, password, token)
+		return repos, token
+	}
+	return repos, ""
+
+}
+
+func initModules(r *chi.Mux) {
+	ccm := modules.NewCCM()
+	modules.SetGlobalCCM(ccm)
+	r.Use(injectData("ccm", ccm))
 }
 
 func displayRoutes(r *chi.Mux) {

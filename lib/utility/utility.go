@@ -3,14 +3,12 @@ package utility
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
-	"github.com/Kaibling/psychic-octo-stock/lib/config"
-	"github.com/Kaibling/psychic-octo-stock/models"
-	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,18 +32,18 @@ func BeautifyJson(data interface{}) string {
 	return string(b)
 }
 
-func GenerateToken(username string, hmacSampleSecret interface{}) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"name": username,
-		"nbf":  time.Now().Unix(),
-	})
+// func GenerateToken(username string, hmacSampleSecret interface{}) (string, error) {
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+// 		"name": username,
+// 		"nbf":  time.Now().Unix(),
+// 	})
 
-	tokenString, err := token.SignedString(hmacSampleSecret)
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
-}
+// 	tokenString, err := token.SignedString(hmacSampleSecret)
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	return tokenString, nil
+// }
 
 func GetContext(key string, r *http.Request) interface{} {
 	parameter := r.Context().Value(key)
@@ -55,45 +53,20 @@ func GetContext(key string, r *http.Request) interface{} {
 	return parameter
 }
 
-func CurrencyConverter(mu models.MonetaryUnit, currency string) models.MonetaryUnit {
-	//todo things
-	return models.MonetaryUnit{Amount: mu.Amount, Currency: currency}
-}
+func GetRequest(url string) []byte {
 
-func AddAndConvertFunds(mu1 models.MonetaryUnit, mu2 models.MonetaryUnit) models.MonetaryUnit {
-	//if both have the same currency, just add it
-	//if one has the default one, take the default
-	//if nobody has default, convert both to default
-	if mu1.Currency == mu2.Currency {
-		return models.MonetaryUnit{Amount: mu1.Amount + mu2.Amount, Currency: mu1.Currency}
-	} else if mu1.Currency == config.Config.Currency || mu2.Currency == config.Config.Currency {
-		if mu1.Currency == config.Config.Currency {
-			mu2Converted := CurrencyConverter(mu2, config.Config.Currency)
-			return models.MonetaryUnit{Amount: mu1.Amount + mu2Converted.Amount, Currency: config.Config.Currency}
-		}
-		mu1Converted := CurrencyConverter(mu1, config.Config.Currency)
-		return models.MonetaryUnit{Amount: mu2.Amount + mu1Converted.Amount, Currency: config.Config.Currency}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		fmt.Println(err)
 	}
-	mu1Converted := CurrencyConverter(mu1, config.Config.Currency)
-	mu2Converted := CurrencyConverter(mu2, config.Config.Currency)
-	return models.MonetaryUnit{Amount: mu1Converted.Amount + mu2Converted.Amount, Currency: config.Config.Currency}
-}
+	req.Header.Set("Content-Type", "application/json")
 
-func SubtractAndConvertFunds(mu1 models.MonetaryUnit, mu2 models.MonetaryUnit) models.MonetaryUnit {
-	//if both have the same currency, just add it
-	//if one has the default one, take the default
-	//if nobody has default, convert both to default
-	if mu1.Currency == mu2.Currency {
-		return models.MonetaryUnit{Amount: mu1.Amount - mu2.Amount, Currency: mu1.Currency}
-	} else if mu1.Currency == config.Config.Currency || mu2.Currency == config.Config.Currency {
-		if mu1.Currency == config.Config.Currency {
-			mu2Converted := CurrencyConverter(mu2, config.Config.Currency)
-			return models.MonetaryUnit{Amount: mu1.Amount - mu2Converted.Amount, Currency: config.Config.Currency}
-		}
-		mu1Converted := CurrencyConverter(mu1, config.Config.Currency)
-		return models.MonetaryUnit{Amount: mu2.Amount - mu1Converted.Amount, Currency: config.Config.Currency}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
 	}
-	mu1Converted := CurrencyConverter(mu1, config.Config.Currency)
-	mu2Converted := CurrencyConverter(mu2, config.Config.Currency)
-	return models.MonetaryUnit{Amount: mu1Converted.Amount - mu2Converted.Amount, Currency: config.Config.Currency}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	return body
 }

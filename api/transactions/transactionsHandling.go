@@ -11,6 +11,7 @@ import (
 	"github.com/Kaibling/psychic-octo-stock/lib/transmission"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/modules"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/go-chi/chi"
 )
@@ -185,8 +186,8 @@ func enoughFunds(userID string, transactionID string) bool {
 		log.Println("transaction cost not calculatable: " + err.Error())
 		return false
 	}
-	transactionCostConverted := utility.CurrencyConverter(*transactionCost, config.Config.Currency)
-	userFundsConverted := utility.CurrencyConverter(*userFunds, config.Config.Currency)
+	transactionCostConverted := modules.CCM.ConvertCurrency(*transactionCost, config.Config.Currency)
+	userFundsConverted := modules.CCM.ConvertCurrency(*userFunds, config.Config.Currency)
 	return transactionCostConverted.Currency <= userFundsConverted.Currency
 }
 
@@ -220,8 +221,8 @@ func executeTransaction(transactionID string) error {
 	userRepo := repositories.UserRepo
 	seller, _ := userRepo.GetByID(loadedTransaction.SellerID)
 	sellerMu := &models.MonetaryUnit{Amount: seller.Funds, Currency: seller.Currency}
-	newSellerFunds := utility.AddAndConvertFunds(*sellerMu, *transactionCost)
-	newSellerFundsConverted := utility.CurrencyConverter(newSellerFunds, sellerMu.Currency)
+	newSellerFunds := modules.CCM.AddAndConvertFunds(*sellerMu, *transactionCost)
+	newSellerFundsConverted := modules.CCM.ConvertCurrency(newSellerFunds, sellerMu.Currency)
 
 	atomicExecutionArray := []interface{}{}
 	updateSellerUserData := map[string]interface{}{"funds": newSellerFundsConverted.Amount}
@@ -241,8 +242,8 @@ func executeTransaction(transactionID string) error {
 
 	buyer, _ := userRepo.GetByID(loadedTransaction.BuyerID)
 	buyerMu := &models.MonetaryUnit{Amount: buyer.Funds, Currency: buyer.Currency}
-	newBuyerFunds := utility.SubtractAndConvertFunds(*buyerMu, *transactionCost)
-	newBuyerFundsConverted := utility.CurrencyConverter(newBuyerFunds, buyerMu.Currency)
+	newBuyerFunds := modules.CCM.SubtractAndConvertFunds(*buyerMu, *transactionCost)
+	newBuyerFundsConverted := modules.CCM.ConvertCurrency(newBuyerFunds, buyerMu.Currency)
 	updateBuyerUserData := map[string]interface{}{"funds": newBuyerFundsConverted.Amount}
 	var updateBuyerUserQuery interface{} = "id = ?"
 	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateBuyerUserData, updateBuyerUserQuery, []interface{}{loadedTransaction.BuyerID}})

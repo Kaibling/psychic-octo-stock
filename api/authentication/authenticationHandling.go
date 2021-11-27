@@ -16,7 +16,7 @@ type UserLogin struct {
 
 func login(w http.ResponseWriter, r *http.Request) {
 	response := transmission.GetResponse(r)
-	hmacSampleSecret := utility.GetContext("hmacSecret", r).([]byte)
+	hmacSecret := utility.GetContext("hmacSecret", r).([]byte)
 
 	var userLogin UserLogin
 	erra := json.NewDecoder(r.Body).Decode(&userLogin)
@@ -34,10 +34,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 		response.Send("", "username/password incorrect", http.StatusUnauthorized)
 		return
 	}
+	user, _ := userRepo.GetyName(userLogin.Username)
 
-	token, erro := utility.GenerateToken(userLogin.Username, hmacSampleSecret)
-	if erro != nil {
-		response.Send("", err.Error(), http.StatusBadGateway)
+	tokenRepo, _ := utility.GetContext("tokenRepo", r).(*repositories.TokenRepository)
+	token, err := tokenRepo.GenerateAndAddToken(user.ID, hmacSecret, 0) //todo set valid date to 30 days or something
+	if err != nil {
+		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
 	response.Send(token, "", http.StatusOK)

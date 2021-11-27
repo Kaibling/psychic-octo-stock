@@ -5,6 +5,7 @@ import (
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
+	"github.com/Kaibling/psychic-octo-stock/modules"
 	"github.com/lucsky/cuid"
 )
 
@@ -89,13 +90,23 @@ func (s *UserRepository) GetPWByName(userName string) (string, apierrors.ApiErro
 	}
 	return object.Password, nil
 }
+func (s *UserRepository) GetyName(userName string) (*models.User, apierrors.ApiError) {
+	var object models.User
+
+	query := "username = ?"
+	querData := []interface{}{userName}
+	if err := s.db.FindByWhere(&object, query, querData); err != nil {
+		return nil, err
+	}
+	return &object, nil
+}
 
 func (s *UserRepository) AddFunds(userID string, mu models.MonetaryUnit) apierrors.ApiError {
 	currentFunds, err := s.FundsByID(userID)
 	if err != nil {
 		return err
 	}
-	updatedFunds := utility.AddAndConvertFunds(*currentFunds, mu)
+	updatedFunds := modules.CCM.AddAndConvertFunds(*currentFunds, mu)
 	updateUser := map[string]interface{}{"ID": userID, "Funds": updatedFunds}
 
 	if err := s.db.UpdateByMap(models.User{}, updateUser); err != nil {
