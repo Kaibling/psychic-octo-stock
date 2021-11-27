@@ -79,15 +79,6 @@ func (s *UserRepository) FundsByID(id string) (float64, apierrors.ApiError) {
 	return user.Funds, nil
 }
 
-// func (s *UserRepository) GetPWByName(id string) (string, apierrors.ApiError) {
-// 	var user *models.User
-// 	selectString := []string{"password"}
-// 	if err := s.db.GetData(&user, selectString, id); err != nil {
-// 		return "", err
-// 	}
-// 	return user.Password, nil
-// }
-
 func (s *UserRepository) GetPWByName(userName string) (string, apierrors.ApiError) {
 	var object models.User
 

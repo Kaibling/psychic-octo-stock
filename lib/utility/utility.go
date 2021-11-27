@@ -16,8 +16,7 @@ func HashPassword(plain string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(plain), bcrypt.MinCost)
 	if err != nil {
 		log.Println(err)
-	} // GenerateFromPassword returns a byte slice so we need to
-	// convert the bytes to a string and return it
+	}
 	return string(hash)
 }
 func ComparePasswords(hashedPw string, comparePw string) bool {
@@ -50,7 +49,6 @@ func GetContext(key string, r *http.Request) interface{} {
 	parameter := r.Context().Value(key)
 	if parameter == nil {
 		panic(apierrors.NewClientError(errors.New("context parameter '" + key + "' missing")))
-		//return "", apierrors.NewClientError(errors.New("context parameter '" + key + "' missing"))
 	}
 	return parameter
 }

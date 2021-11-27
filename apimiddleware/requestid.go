@@ -15,7 +15,7 @@ func Response(next http.Handler) http.Handler {
 		if clientRequestID != "" {
 			requestID = clientRequestID
 		} else {
-			requestID = cuid.New()
+			requestID = cuid.Slug()
 		}
 		response := transmission.NewResponse(w, r, requestID)
 		ctx := context.WithValue(r.Context(), "responseObject", response)

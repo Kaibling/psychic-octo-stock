@@ -92,9 +92,6 @@ func TestUpdateUser(t *testing.T) {
 	assert.True(t, ok)
 	userID := reponseUser["ID"].(string)
 
-	//updateUser := models.User{
-	//	Address: "somethingNew",
-	//}
 	updateUser := map[string]interface{}{
 		"Address": "somethingNew",
 	}
@@ -160,8 +157,6 @@ func TestGetAllUser(t *testing.T) {
 	user2 := reponseUsers[2].(map[string]interface{})
 	assert.Equal(t, user2["username"], testUser2.Username)
 	assert.Equal(t, user2["email"], testUser2.Email)
-
-	//userID := reponseUser["ID"].(string)
 
 }
 

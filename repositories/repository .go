@@ -3,7 +3,6 @@ package repositories
 import (
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
-	//"github.com/lucsky/cuid"
 )
 
 type Repository struct {
@@ -17,7 +16,6 @@ func NewRepository(dbConn database.DBConnector, dbModel interface{}, selectStrin
 }
 
 func (s *Repository) Add(user *interface{}) apierrors.ApiError {
-	//user.ID = cuid.New()
 	if err := s.db.Add(&user); err != nil {
 		return err
 	}

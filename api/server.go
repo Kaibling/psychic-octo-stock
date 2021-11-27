@@ -36,7 +36,6 @@ func baseServer() (*chi.Mux, database.DBConnector, string) {
 
 	r.Use(apimiddleware.Response)
 	r.Use(utility.NewStructuredLogger(logger))
-	//r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(injectData("hmacSecret", []byte(config.Config.TokenSecret)))

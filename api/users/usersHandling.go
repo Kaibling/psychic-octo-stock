@@ -24,7 +24,6 @@ func userPost(w http.ResponseWriter, r *http.Request) {
 		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-	//todo proper return schema
 	newUser.Password = ""
 	response.Send(newUser, "", http.StatusCreated)
 }

@@ -21,7 +21,6 @@ func (e *NotFoundError) HttpStatus() int { return e.HttpStatusCode }
 type GeneralError struct {
 	HttpStatusCode int
 	Err            error
-	//ErrorType string
 }
 
 func NewGeneralError(err error) *GeneralError {
@@ -33,7 +32,6 @@ func (e *GeneralError) HttpStatus() int { return e.HttpStatusCode }
 type ClientError struct {
 	HttpStatusCode int
 	Err            error
-	//ErrorType string
 }
 
 func NewClientError(err error) *ClientError {
