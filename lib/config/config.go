@@ -12,6 +12,7 @@ type Configuration struct {
 	DBUrl       string
 	TokenSecret string
 	Env         string
+	LogFormat string
 }
 
 func NewConfig() *Configuration {
@@ -23,8 +24,9 @@ func NewConfig() *Configuration {
 	dbURL := getEnv("DBURL", "file::memory:")
 	tokenSecret := getEnv("TOKEN_SECRECT", "tokensecretreally")
 	env := getEnv("ENV", "DEV")
+	logFormat := getEnv("LOGFORMAT", "STRING")
 
-	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret, Env: env}
+	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret, Env: env,LogFormat: logFormat}
 	return Config
 }
 
