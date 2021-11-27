@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/go-chi/render"
-	log "github.com/sirupsen/logrus"
 )
 
 type Envelope struct {
@@ -37,7 +36,6 @@ func (s *Response) Send(data interface{}, message string, httpStatus int) {
 	}
 	render.Status(s.r, httpStatus)
 	render.Respond(s.w, s.r, sendEnv)
-	log.Debug()
 }
 
 func (s *Response) GetRequestId() string {

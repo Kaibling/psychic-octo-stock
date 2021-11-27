@@ -61,7 +61,7 @@ func (s *TransactionRepository) GetAll() ([]*models.Transaction, apierrors.ApiEr
 }
 
 func (s *TransactionRepository) DeleteByObject(data *models.Transaction) apierrors.ApiError {
-	if err := s.db.DeleteByID(data); err != nil {
+	if err := s.db.DeleteByObject(data); err != nil {
 		return err
 	}
 	return nil

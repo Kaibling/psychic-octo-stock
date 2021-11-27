@@ -44,10 +44,10 @@ func TestCreateUser(t *testing.T) {
 }
 func TestCreateUserNotUniqe(t *testing.T) {
 	r, _, performTestRequest := api.TestAssemblyRoute()
-	testUser := models.User{
-		Username: "Test2",
-		Email:    "abc2@abc.ac",
-		Password: "abc123",
+	testUser := map[string]interface{}{
+		"username": "Test2",
+		"email":    "abc2@abc.ac",
+		"password": "abc123",
 	}
 	byte_User, _ := json.Marshal(testUser)
 	w := performTestRequest(r, "POST", URL, byte_User, nil)
@@ -228,4 +228,65 @@ func TestUserFunds(t *testing.T) {
 	userFunds, err := userRepo.FundsByID(testUser.ID)
 	assert.Nil(t, err)
 	assert.Equal(t, 1234.0, userFunds)
+}
+
+func TestCreateUserAddinfFunds(t *testing.T) {
+	r, _, performTestRequest := api.TestAssemblyRoute()
+	testUser := models.User{
+		Username: "Test",
+		Email:    "abc@abc.ac",
+		Password: "abc123",
+		Funds:    1234,
+	}
+	byte_User, _ := json.Marshal(testUser)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Nil(t, err)
+	value, exists := response["data"]
+	assert.True(t, exists)
+	reponseUser, ok := value.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, reponseUser["username"], testUser.Username)
+	assert.Equal(t, reponseUser["email"], testUser.Email)
+	assert.Equal(t, float64(0), reponseUser["funds"])
+
+}
+
+func TestUpdateUserAddingFunds(t *testing.T) {
+	r, _, performTestRequest := api.TestAssemblyRoute()
+	testUser := models.User{
+		Username: "Test3",
+		Email:    "abc3@abc.ac",
+		Password: "abc123",
+		Funds:    1234,
+	}
+	byte_User, _ := json.Marshal(testUser)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Nil(t, err)
+	value, exists := response["data"]
+	assert.True(t, exists)
+	reponseUser, ok := value.(map[string]interface{})
+	assert.True(t, ok)
+	userID := reponseUser["ID"].(string)
+
+	updateUser := map[string]interface{}{
+		"Funds": 4321,
+	}
+	updateByteUser, _ := json.Marshal(updateUser)
+	w = performTestRequest(r, "PUT", URL+"/"+userID, updateByteUser, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var updateResponse map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &updateResponse)
+	assert.Nil(t, err)
+	value2, exists := updateResponse["data"]
+	assert.True(t, exists)
+	reponseUser, ok = value2.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, float64(0), reponseUser["funds"])
 }

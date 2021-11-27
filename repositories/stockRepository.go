@@ -61,7 +61,7 @@ func (s *StockRepository) GetAll() ([]*models.Stock, apierrors.ApiError) {
 }
 
 func (s *StockRepository) DeleteByObject(data *models.Stock) apierrors.ApiError {
-	if err := s.db.DeleteByID(data); err != nil {
+	if err := s.db.DeleteByObject(data); err != nil {
 		return err
 	}
 	return nil

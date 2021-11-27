@@ -20,6 +20,7 @@ func userPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
+	newUser.Funds = 0
 	if err := userRepo.Add(&newUser); err != nil {
 		response.Send("", err.Error(), err.HttpStatus())
 		return
@@ -52,6 +53,7 @@ func userPut(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updateUser["ID"] = userID
+	delete(updateUser, "Funds")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 
 	userRepo.UpdateWithMap(updateUser)

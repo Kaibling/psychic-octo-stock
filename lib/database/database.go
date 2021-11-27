@@ -19,10 +19,11 @@ type DBConnector interface {
 	UpdateByObject(data interface{}) apierrors.ApiError
 	UpdateByMap(model interface{}, data map[string]interface{}) apierrors.ApiError
 	GetAll(data interface{}, selectString []string) apierrors.ApiError
-	DeleteByID(model interface{}) apierrors.ApiError
+	DeleteByObject(model interface{}) apierrors.ApiError
 	GetData(data interface{}, selectString []string, id string) apierrors.ApiError
 	ExecuteTransaction(data []interface{}) apierrors.ApiError
 	FindByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError
+	FindAllByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError
 }
 
 type GormConnector struct {
@@ -35,7 +36,9 @@ func NewDatabaseConnector(url string) *GormConnector {
 }
 
 func (s *GormConnector) Connect() apierrors.ApiError {
-	config := &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
+	//config := &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)}
+	config := &gorm.Config{Logger: logger.Default.LogMode(logger.Info)}
+
 	//config := &gorm.Config{}
 	db, err := gorm.Open(sqlite.Open(s.url), config)
 	if err != nil {
@@ -91,7 +94,7 @@ func (s *GormConnector) GetAll(data interface{}, selectString []string) apierror
 	return nil
 }
 
-func (s *GormConnector) DeleteByID(data interface{}) apierrors.ApiError {
+func (s *GormConnector) DeleteByObject(data interface{}) apierrors.ApiError {
 	if dbc := s.connector.Delete(data); dbc.Error != nil {
 		return apierrors.NewGeneralError(dbc.Error)
 	}
@@ -104,7 +107,6 @@ func (s *GormConnector) GetData(data interface{}, selectString []string, id stri
 	}
 	return nil
 }
-
 func (s *GormConnector) ExecuteTransaction(data []interface{}) apierrors.ApiError {
 	dbc := s.connector.Transaction(
 		func(tx *gorm.DB) error {
@@ -133,6 +135,14 @@ func (s *GormConnector) ExecuteTransaction(data []interface{}) apierrors.ApiErro
 func (s *GormConnector) FindByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError {
 
 	if dbc := s.connector.Where(query, queryData...).First(&object); dbc.Error != nil {
+		return apierrors.NewGeneralError(dbc.Error)
+	}
+	return nil
+}
+
+func (s *GormConnector) FindAllByWhere(object interface{}, query string, queryData []interface{}) apierrors.ApiError {
+
+	if dbc := s.connector.Where(query, queryData...).Find(object); dbc.Error != nil {
 		return apierrors.NewGeneralError(dbc.Error)
 	}
 	return nil

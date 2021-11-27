@@ -1,6 +1,7 @@
 package users
 
 import (
+	"github.com/Kaibling/psychic-octo-stock/api/users/tokens"
 	"github.com/Kaibling/psychic-octo-stock/apimiddleware"
 	"github.com/go-chi/chi"
 )
@@ -12,5 +13,6 @@ func AddRoute() chi.Router {
 	r.With(apimiddleware.Authorization).Put("/{id}", userPut)
 	r.With(apimiddleware.Authorization).Delete("/{id}", userDelete)
 	r.With(apimiddleware.Authorization).Get("/{id}", userGet)
+	r.Mount("/{id}/tokens", tokens.AddRoute())
 	return r
 }

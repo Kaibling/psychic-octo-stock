@@ -63,7 +63,7 @@ func (s *UserRepository) GetAll() ([]*models.User, apierrors.ApiError) {
 }
 
 func (s *UserRepository) DeleteByObject(data *models.User) apierrors.ApiError {
-	if err := s.db.DeleteByID(data); err != nil {
+	if err := s.db.DeleteByObject(data); err != nil {
 		return err
 	}
 	return nil

@@ -52,14 +52,14 @@ func (s *Repository) GetAll(list []*interface{}) apierrors.ApiError {
 }
 
 func (s *Repository) DeleteByObject(data interface{}) apierrors.ApiError {
-	if err := s.db.DeleteByID(data); err != nil {
+	if err := s.db.DeleteByObject(data); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *Repository) FundsByID(data interface{}) apierrors.ApiError {
-	if err := s.db.DeleteByID(data); err != nil {
+	if err := s.db.DeleteByObject(data); err != nil {
 		return err
 	}
 	return nil

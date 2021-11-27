@@ -26,17 +26,17 @@ var StockSelect = []string{"ID", " Name", "Quantity"}
 type StockToUser struct {
 	gorm.Model
 	ID       string `gorm:"primaryKey;autoIncrement:false;not null"`
-	StockID  string `gorm:"foreignkey:StockID"`
-	UserID   string `gorm:"foreignkey:UserID"`
+	StockID  string `gorm:"foreignkey:StockID" json:"stock_id"`
+	UserID   string `gorm:"foreignkey:UserID" json:"user_id"`
 	Quantity int    `gorm:"not null" json:"quantity"`
 }
 
 type Transaction struct {
 	gorm.Model
 	ID       string  `gorm:"primaryKey;autoIncrement:false;not null"`
-	SellerID string  `gorm:"foreignkey:userID" json:"sellerID"`
-	BuyerID  string  `gorm:"foreignkey:userID" json:"buyerID"`
-	StockID  string  `gorm:"foreignkey:stockID;not null" json:"stockID"`
+	SellerID string  `gorm:"foreignkey:userID" json:"seller_id"`
+	BuyerID  string  `gorm:"foreignkey:userID" json:"buyer_id"`
+	StockID  string  `gorm:"foreignkey:stockID;not null" json:"stock_id"`
 	Quantity int     `gorm:"not null" json:"quantity"`
 	Price    float64 `gorm:"not null" json:"price"`
 	Type     string  `gorm:"not null" json:"type"`
@@ -46,7 +46,7 @@ type Transaction struct {
 
 var transactionTypes = []string{"SELL", "BUY"}
 var transactionStatus = []string{"PENDING", "ACTIVE", "CLOSED", "CANCELLED"}
-var TransactionSelect = []string{"ID", " seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "Status"}
+var TransactionSelect = []string{"ID", "seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "Status"}
 
 func IsTransactionsType(data string) bool {
 	return contains(transactionTypes, data)
@@ -65,3 +65,13 @@ func contains(s []string, e string) bool {
 	}
 	return false
 }
+
+type Token struct {
+	gorm.Model
+	ID      string `gorm:"primaryKey;autoIncrement:false;not null"`
+	Active  bool   `gorm:"active"`
+	Comment string `gorm:"comment"`
+	UserID  string `gorm:"foreignkey:userID;not null" json:"user_id"`
+}
+
+var TokenSelect = []string{"ID", "user_id", "comment", "active"}

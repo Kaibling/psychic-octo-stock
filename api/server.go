@@ -94,6 +94,7 @@ func migrateDB(db database.DBConnector) string {
 
 	db.Migrate(&models.User{})
 	db.Migrate(&models.Stock{})
+	db.Migrate(&models.Token{})
 	db.Migrate(&models.StockToUser{})
 	db.Migrate(&models.Transaction{})
 
@@ -120,10 +121,14 @@ func initRepos(r *chi.Mux, db database.DBConnector) map[string]interface{} {
 	transactionRepo := repositories.NewTransactionRepository(db)
 	repositories.SetTransactionRepo(transactionRepo)
 	repos["transactionRepo"] = transactionRepo
+	tokenRepo := repositories.NewTokenRepository(db)
+	repositories.SetTokenRepo(tokenRepo)
+	repos["tokenRepo"] = tokenRepo
 
 	r.Use(injectData("userRepo", userRepo))
 	r.Use(injectData("stockRepo", stockRepo))
 	r.Use(injectData("transactionRepo", transactionRepo))
+	r.Use(injectData("tokenRepo", tokenRepo))
 	return repos
 
 }
