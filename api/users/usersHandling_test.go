@@ -222,15 +222,15 @@ func TestGetUser(t *testing.T) {
 
 func TestUserFunds(t *testing.T) {
 	_, repos, _ := api.TestAssemblyRoute()
-	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "a@a.a"}
+	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "a@a.a", Currency: "EUR"}
 	userRepo := repos["userRepo"].(*repositories.UserRepository)
 	userRepo.Add(testUser)
 	userFunds, err := userRepo.FundsByID(testUser.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, 1234.0, userFunds)
+	assert.Equal(t, &models.MonetaryUnit{Amount: 1234, Currency: "EUR"}, userFunds)
 }
 
-func TestCreateUserAddinfFunds(t *testing.T) {
+func TestCreateUserNotAddingFundsInCreate(t *testing.T) {
 	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test",
@@ -254,7 +254,44 @@ func TestCreateUserAddinfFunds(t *testing.T) {
 
 }
 
-func TestUpdateUserAddingFunds(t *testing.T) {
+func TestUpdateUserNoAddingFundsWithPut(t *testing.T) {
+	r, _, performTestRequest := api.TestAssemblyRoute()
+	testUser := models.User{
+		Username: "Test3",
+		Email:    "abc3@abc.ac",
+		Password: "abc123",
+		Funds:    1234,
+	}
+	byte_User, _ := json.Marshal(testUser)
+	w := performTestRequest(r, "POST", URL, byte_User, nil)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.Nil(t, err)
+	value, exists := response["data"]
+	assert.True(t, exists)
+	reponseUser, ok := value.(map[string]interface{})
+	assert.True(t, ok)
+	userID := reponseUser["ID"].(string)
+
+	updateUser := map[string]interface{}{
+		"Funds": 4321,
+	}
+	updateByteUser, _ := json.Marshal(updateUser)
+	w = performTestRequest(r, "PUT", URL+"/"+userID, updateByteUser, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var updateResponse map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &updateResponse)
+	assert.Nil(t, err)
+	value2, exists := updateResponse["data"]
+	assert.True(t, exists)
+	reponseUser, ok = value2.(map[string]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, float64(0), reponseUser["funds"])
+}
+
+func TestUserAddingFunds(t *testing.T) {
 	r, _, performTestRequest := api.TestAssemblyRoute()
 	testUser := models.User{
 		Username: "Test3",

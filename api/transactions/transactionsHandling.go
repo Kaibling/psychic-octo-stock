@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
+	"github.com/Kaibling/psychic-octo-stock/lib/config"
 	"github.com/Kaibling/psychic-octo-stock/lib/transmission"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
@@ -184,7 +185,9 @@ func enoughFunds(userID string, transactionID string) bool {
 		log.Println("transaction cost not calculatable: " + err.Error())
 		return false
 	}
-	return transactionCost <= userFunds
+	transactionCostConverted := utility.CurrencyConverter(*transactionCost, config.Config.Currency)
+	userFundsConverted := utility.CurrencyConverter(*userFunds, config.Config.Currency)
+	return transactionCostConverted.Currency <= userFundsConverted.Currency
 }
 
 func enoughStocks(userID string, transactionID string) bool {
@@ -216,9 +219,12 @@ func executeTransaction(transactionID string) error {
 	}
 	userRepo := repositories.UserRepo
 	seller, _ := userRepo.GetByID(loadedTransaction.SellerID)
+	sellerMu := &models.MonetaryUnit{Amount: seller.Funds, Currency: seller.Currency}
+	newSellerFunds := utility.AddAndConvertFunds(*sellerMu, *transactionCost)
+	newSellerFundsConverted := utility.CurrencyConverter(newSellerFunds, sellerMu.Currency)
 
 	atomicExecutionArray := []interface{}{}
-	updateSellerUserData := map[string]interface{}{"funds": seller.Funds + transactionCost}
+	updateSellerUserData := map[string]interface{}{"funds": newSellerFundsConverted.Amount}
 	var updateSellerUserQuery interface{} = "id = ?"
 	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateSellerUserData, updateSellerUserQuery, []interface{}{loadedTransaction.SellerID}})
 	stockRepo := repositories.StockRepo
@@ -229,10 +235,15 @@ func executeTransaction(transactionID string) error {
 	}
 
 	updateSellerStockData := map[string]interface{}{"Quantity": stockToUserDataSeller.Quantity - loadedTransaction.Quantity}
+
 	var updateSellerStockQuery interface{} = "stock_id = ? and user_id = ?"
 	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.StockToUser{}, updateSellerStockData, updateSellerStockQuery, []interface{}{loadedTransaction.StockID, loadedTransaction.SellerID}})
 
-	updateBuyerUserData := map[string]interface{}{"funds": seller.Funds - transactionCost}
+	buyer, _ := userRepo.GetByID(loadedTransaction.BuyerID)
+	buyerMu := &models.MonetaryUnit{Amount: buyer.Funds, Currency: buyer.Currency}
+	newBuyerFunds := utility.SubtractAndConvertFunds(*buyerMu, *transactionCost)
+	newBuyerFundsConverted := utility.CurrencyConverter(newBuyerFunds, buyerMu.Currency)
+	updateBuyerUserData := map[string]interface{}{"funds": newBuyerFundsConverted.Amount}
 	var updateBuyerUserQuery interface{} = "id = ?"
 	atomicExecutionArray = append(atomicExecutionArray, []interface{}{models.User{}, updateBuyerUserData, updateBuyerUserQuery, []interface{}{loadedTransaction.BuyerID}})
 	//update or insert

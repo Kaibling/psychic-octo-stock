@@ -47,8 +47,8 @@ func TestCreate(t *testing.T) {
 	reponseObject, ok := value.(map[string]interface{})
 	assert.True(t, ok)
 	assert.Equal(t, testObject.Type, reponseObject["type"])
-	assert.Equal(t, testObject.SellerID, reponseObject["sellerID"])
-	assert.Equal(t, testObject.StockID, reponseObject["stockID"])
+	assert.Equal(t, testObject.SellerID, reponseObject["seller_id"])
+	assert.Equal(t, testObject.StockID, reponseObject["stock_id"])
 	assert.Equal(t, testObject.Quantity, int(reponseObject["quantity"].(float64)))
 
 }
@@ -125,15 +125,15 @@ func TestGetAll(t *testing.T) {
 	assert.True(t, ok)
 
 	object1 := reponseObjects[0].(map[string]interface{})
-	assert.Equal(t, object1["buyerID"], testObject.BuyerID)
-	assert.Equal(t, object1["stockID"], testObject.StockID)
+	assert.Equal(t, object1["buyer_id"], testObject.BuyerID)
+	assert.Equal(t, object1["stock_id"], testObject.StockID)
 	assert.Equal(t, int(object1["quantity"].(float64)), testObject.Quantity)
 	assert.Equal(t, object1["type"], testObject.Type)
 
 	object2 := reponseObjects[1].(map[string]interface{})
-	assert.Equal(t, object2["sellerID"], testObject2.SellerID)
+	assert.Equal(t, object2["seller_id"], testObject2.SellerID)
 
-	assert.Equal(t, object2["stockID"], testObject2.StockID)
+	assert.Equal(t, object2["stock_id"], testObject2.StockID)
 	assert.Equal(t, int(object2["quantity"].(float64)), testObject2.Quantity)
 	assert.Equal(t, object2["type"], testObject2.Type)
 
@@ -369,9 +369,10 @@ func TestTransactionCosts(t *testing.T) {
 		Type:     "SELL",
 		Status:   "PENDING",
 		Price:    2,
+		Currency: "EUR",
 	}
 	transactionRepo.Add(&testObject)
 	cost, err := transactionRepo.TransactionCostsbyID(testObject.ID)
 	assert.Nil(t, err)
-	assert.Equal(t, 24.0, cost)
+	assert.Equal(t, &models.MonetaryUnit{Amount: testObject.Price * float64(testObject.Quantity), Currency: "EUR"}, cost)
 }

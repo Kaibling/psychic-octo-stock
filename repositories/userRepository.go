@@ -69,14 +69,14 @@ func (s *UserRepository) DeleteByObject(data *models.User) apierrors.ApiError {
 	return nil
 }
 
-func (s *UserRepository) FundsByID(id string) (float64, apierrors.ApiError) {
+func (s *UserRepository) FundsByID(id string) (*models.MonetaryUnit, apierrors.ApiError) {
 	var user *models.User
-	selectString := []string{"funds"}
+	selectString := []string{"funds", "currency"}
 	if err := s.db.GetData(&user, selectString, id); err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return user.Funds, nil
+	return &models.MonetaryUnit{Amount: user.Funds, Currency: user.Currency}, nil
 }
 
 func (s *UserRepository) GetPWByName(userName string) (string, apierrors.ApiError) {
@@ -88,4 +88,18 @@ func (s *UserRepository) GetPWByName(userName string) (string, apierrors.ApiErro
 		return "", err
 	}
 	return object.Password, nil
+}
+
+func (s *UserRepository) AddFunds(userID string, mu models.MonetaryUnit) apierrors.ApiError {
+	currentFunds, err := s.FundsByID(userID)
+	if err != nil {
+		return err
+	}
+	updatedFunds := utility.AddAndConvertFunds(*currentFunds, mu)
+	updateUser := map[string]interface{}{"ID": userID, "Funds": updatedFunds}
+
+	if err := s.db.UpdateByMap(models.User{}, updateUser); err != nil {
+		return err
+	}
+	return nil
 }

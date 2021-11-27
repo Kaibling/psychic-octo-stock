@@ -10,9 +10,10 @@ type User struct {
 	Email    string  `gorm:"unique" json:"email"`
 	Address  string  `json:"address"`
 	Funds    float64 `gorm:"default:0" json:"funds"`
+	Currency string  `gorm:"not null" json:"currency"`
 }
 
-var UserSelect = []string{"ID", " Username", " Email", " Address", "Funds"}
+var UserSelect = []string{"ID", " Username", " Email", " Address", "Funds", "currency"}
 
 type Stock struct {
 	gorm.Model
@@ -39,6 +40,7 @@ type Transaction struct {
 	StockID  string  `gorm:"foreignkey:stockID;not null" json:"stock_id"`
 	Quantity int     `gorm:"not null" json:"quantity"`
 	Price    float64 `gorm:"not null" json:"price"`
+	Currency string  `gorm:"not null" json:"currency"`
 	Type     string  `gorm:"not null" json:"type"`
 	Status   string  `gorm:"not null;default:PENDING" json:"status"`
 	Comment  string  `gorm:"default:initiated" json:"comment"`
@@ -46,7 +48,7 @@ type Transaction struct {
 
 var transactionTypes = []string{"SELL", "BUY"}
 var transactionStatus = []string{"PENDING", "ACTIVE", "CLOSED", "CANCELLED"}
-var TransactionSelect = []string{"ID", "seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "Status"}
+var TransactionSelect = []string{"ID", "seller_id", "buyer_id", "stock_id", " Quantity", " Type", "Price", "currency", "Status"}
 
 func IsTransactionsType(data string) bool {
 	return contains(transactionTypes, data)
@@ -75,3 +77,8 @@ type Token struct {
 }
 
 var TokenSelect = []string{"ID", "user_id", "comment", "active"}
+
+type MonetaryUnit struct {
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
+}

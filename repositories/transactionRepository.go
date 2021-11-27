@@ -67,14 +67,14 @@ func (s *TransactionRepository) DeleteByObject(data *models.Transaction) apierro
 	return nil
 }
 
-func (s *TransactionRepository) TransactionCostsbyID(transactionID string) (float64, apierrors.ApiError) {
+func (s *TransactionRepository) TransactionCostsbyID(transactionID string) (*models.MonetaryUnit, apierrors.ApiError) {
 	var transaction *models.Transaction
-	selectString := []string{"price", "quantity"}
+	selectString := []string{"price", "quantity", "currency"}
 	if err := s.db.GetData(&transaction, selectString, transactionID); err != nil {
-		return 0, err
+		return nil, err
 	}
 	combinedPrice := float64(transaction.Quantity) * transaction.Price
-	return combinedPrice, nil
+	return &models.MonetaryUnit{Amount: combinedPrice, Currency: transaction.Currency}, nil
 
 }
 

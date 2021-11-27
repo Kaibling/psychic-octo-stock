@@ -13,6 +13,7 @@ type Configuration struct {
 	TokenSecret string
 	Env         string
 	LogFormat   string
+	Currency    string
 }
 
 func NewConfig() *Configuration {
@@ -25,8 +26,9 @@ func NewConfig() *Configuration {
 	tokenSecret := getEnv("TOKEN_SECRECT", "tokensecretreally")
 	env := getEnv("ENV", "DEV")
 	logFormat := getEnv("LOGFORMAT", "JSON")
+	currency := getEnv("CURRENCY", "EUR")
 
-	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret, Env: env, LogFormat: logFormat}
+	Config = &Configuration{DBUrl: dbURL, TokenSecret: tokenSecret, Env: env, LogFormat: logFormat, Currency: currency}
 	return Config
 }
 
