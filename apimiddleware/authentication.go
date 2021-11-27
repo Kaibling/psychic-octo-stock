@@ -13,7 +13,7 @@ import (
 
 func Authorization(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := transmission.GetResponse(w, r)
+		response := transmission.GetResponse(r)
 		hmacSampleSecret, _ := utility.GetContext("hmacSecret", r).([]byte)
 		auth := r.Header.Get("Authorization")
 		if auth == "" {

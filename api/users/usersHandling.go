@@ -12,7 +12,7 @@ import (
 )
 
 func userPost(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	var newUser models.User
 	erra := json.NewDecoder(r.Body).Decode(&newUser)
 	if erra != nil {
@@ -30,7 +30,7 @@ func userPost(w http.ResponseWriter, r *http.Request) {
 }
 
 func usersGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 
 	userList, err := userRepo.GetAll()
@@ -42,7 +42,7 @@ func usersGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func userPut(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	userID := chi.URLParam(r, "id")
 	var updateUser map[string]interface{}
 	erra := json.NewDecoder(r.Body).Decode(&updateUser)
@@ -66,7 +66,7 @@ func userPut(w http.ResponseWriter, r *http.Request) {
 }
 
 func userDelete(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	userID := chi.URLParam(r, "id")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)
@@ -82,7 +82,7 @@ func userDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func userGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	userID := chi.URLParam(r, "id")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	loadedUser, err := userRepo.GetByID(userID)

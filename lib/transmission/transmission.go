@@ -44,13 +44,7 @@ func (s *Response) GetRequestId() string {
 	return s.requestID
 }
 
-// func SendResponse(w http.ResponseWriter, r *http.Request, data *Envelope, httpStatusCode int) {
-// 	render.Status(r, httpStatusCode)
-
-// 	render.Respond(w, r, data)
-// }
-
-func GetResponse(w http.ResponseWriter, r *http.Request) *Response {
+func GetResponse(r *http.Request) *Response {
 	parameter := r.Context().Value("responseObject")
 	return parameter.(*Response)
 }

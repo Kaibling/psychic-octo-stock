@@ -15,7 +15,7 @@ import (
 )
 
 func transactionPost(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	var newTransaction models.Transaction
 	erra := json.NewDecoder(r.Body).Decode(&newTransaction)
 	if erra != nil {
@@ -38,7 +38,7 @@ func transactionPost(w http.ResponseWriter, r *http.Request) {
 	response.Send(newTransaction, "", http.StatusCreated)
 }
 func transactionsGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	transactionList, err := transactionRepo.GetAll()
 	if err != nil {
@@ -50,7 +50,7 @@ func transactionsGet(w http.ResponseWriter, r *http.Request) {
 }
 
 func transactionDelete(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	transactionID := chi.URLParam(r, "id")
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)
@@ -66,7 +66,7 @@ func transactionDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func transactionGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	transactionID := chi.URLParam(r, "id")
 	transactionRepo := utility.GetContext("transactionRepo", r).(*repositories.TransactionRepository)
 	loadedUser, err := transactionRepo.GetByID(transactionID)

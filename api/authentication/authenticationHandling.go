@@ -15,7 +15,7 @@ type UserLogin struct {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	hmacSampleSecret := utility.GetContext("hmacSecret", r).([]byte)
 
 	var userLogin UserLogin

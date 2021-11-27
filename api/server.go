@@ -21,7 +21,6 @@ import (
 	"github.com/lucsky/cuid"
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
-	//easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
 func baseServer() (*chi.Mux, database.DBConnector, string) {

@@ -12,7 +12,7 @@ import (
 )
 
 func stockPost(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	userID := chi.URLParam(r, "userid")
 	userRepo := utility.GetContext("userRepo", r).(*repositories.UserRepository)
 	_, err := userRepo.GetByID(userID)
@@ -37,7 +37,7 @@ func stockPost(w http.ResponseWriter, r *http.Request) {
 	response.Send(newStock, "", http.StatusCreated)
 }
 func stocksGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	stockRepo := utility.GetContext("stockRepo", r).(*repositories.StockRepository)
 	userList, err := stockRepo.GetAll()
 	if err != nil {
@@ -47,7 +47,7 @@ func stocksGet(w http.ResponseWriter, r *http.Request) {
 	response.Send(userList, "", http.StatusOK)
 }
 func stockPut(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	stockID := chi.URLParam(r, "id")
 	var updateStock map[string]interface{}
 	erra := json.NewDecoder(r.Body).Decode(&updateStock)
@@ -68,7 +68,7 @@ func stockPut(w http.ResponseWriter, r *http.Request) {
 	response.Send(loadedUser, "", http.StatusOK)
 }
 func stockDelete(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	stockID := chi.URLParam(r, "id")
 	stockRepo := utility.GetContext("stockRepo", r).(*repositories.StockRepository)
 	loadedUser, err := stockRepo.GetByID(stockID)
@@ -84,7 +84,7 @@ func stockDelete(w http.ResponseWriter, r *http.Request) {
 
 }
 func stockGet(w http.ResponseWriter, r *http.Request) {
-	response := transmission.GetResponse(w, r)
+	response := transmission.GetResponse(r)
 	stockID := chi.URLParam(r, "id")
 	stockRepo := utility.GetContext("stockRepo", r).(*repositories.StockRepository)
 	loadedUser, err := stockRepo.GetByID(stockID)
