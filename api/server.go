@@ -39,7 +39,6 @@ func baseServer() (*chi.Mux, database.DBConnector) {
 	r.Use(utility.NewStructuredLogger(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
-	r.Use(injectData("hmacSecret", []byte(config.Config.TokenSecret)))
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
@@ -131,7 +130,7 @@ func initRepos(r *chi.Mux, db database.DBConnector) (map[string]interface{}, str
 		adminID := cuid.New()
 		admin := &models.User{ID: adminID, Username: "admin", Password: password, Email: "admin@local"}
 		db.Add(admin)
-		token, _ := tokenRepo.GenerateAndAddToken(adminID, []byte(config.Config.TokenSecret), 0)
+		token, _ := tokenRepo.GenerateAndAddToken(adminID, 0)
 		fmt.Printf("user: %s, password: %s\ntoken: %s\n", admin.Username, password, token)
 		return repos, token
 	}

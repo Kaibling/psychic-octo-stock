@@ -32,19 +32,6 @@ func BeautifyJson(data interface{}) string {
 	return string(b)
 }
 
-// func GenerateToken(username string, hmacSampleSecret interface{}) (string, error) {
-// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-// 		"name": username,
-// 		"nbf":  time.Now().Unix(),
-// 	})
-
-// 	tokenString, err := token.SignedString(hmacSampleSecret)
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	return tokenString, nil
-// }
-
 func GetContext(key string, r *http.Request) interface{} {
 	parameter := r.Context().Value(key)
 	if parameter == nil {

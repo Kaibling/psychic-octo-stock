@@ -40,6 +40,10 @@ func TestLogin(t *testing.T) {
 	value := createResponse["data"]
 	reponseToken := value.(string)
 	assert.IsType(t, reponseToken, "string") //todo can be done better tested
+	tokenRepo := repos["tokenRepo"].(*repositories.TokenRepository)
+	loadedUserID, err := tokenRepo.GetUserIDByToken(reponseToken)
+	assert.Nil(t, err)
+	assert.Equal(t, testUser.ID, loadedUserID)
 
 }
 

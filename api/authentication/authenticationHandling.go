@@ -16,7 +16,6 @@ type UserLogin struct {
 
 func login(w http.ResponseWriter, r *http.Request) {
 	response := transmission.GetResponse(r)
-	hmacSecret := utility.GetContext("hmacSecret", r).([]byte)
 
 	var userLogin UserLogin
 	erra := json.NewDecoder(r.Body).Decode(&userLogin)
@@ -37,7 +36,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	user, _ := userRepo.GetyName(userLogin.Username)
 
 	tokenRepo, _ := utility.GetContext("tokenRepo", r).(*repositories.TokenRepository)
-	token, err := tokenRepo.GenerateAndAddToken(user.ID, hmacSecret, 0) //todo set valid date to 30 days or something
+	token, err := tokenRepo.GenerateAndAddToken(user.ID, 0) //todo set valid date to 30 days or something
 	if err != nil {
 		response.Send("", err.Error(), err.HttpStatus())
 		return

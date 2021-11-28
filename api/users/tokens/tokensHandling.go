@@ -29,8 +29,7 @@ func tokenPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tokenRepo := utility.GetContext("tokenRepo", r).(*repositories.TokenRepository)
-	hmac := utility.GetContext("hmacSecret", r).([]byte)
-	tokenString, err := tokenRepo.GenerateAndAddToken(userID, hmac, int64(newTokenData.ValidUntil))
+	tokenString, err := tokenRepo.GenerateAndAddToken(userID, int64(newTokenData.ValidUntil))
 	if erra != nil {
 		response.Send("", err.Error(), err.HttpStatus())
 		return

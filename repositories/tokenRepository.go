@@ -1,16 +1,17 @@
 package repositories
 
 import (
-	"errors"
+	"crypto/rand"
 	"fmt"
-	"time"
+	"math/big"
 
 	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"github.com/Kaibling/psychic-octo-stock/lib/database"
 	"github.com/Kaibling/psychic-octo-stock/models"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/lucsky/cuid"
 )
+
+var DEFAULT_TOKEN_LENGTH = 32
 
 var TokenRepo *TokenRepository
 
@@ -35,17 +36,15 @@ func (s *TokenRepository) Add(token *models.Token) apierrors.ApiError {
 	return nil
 }
 
-func (s *TokenRepository) GenerateAndAddToken(userid string, hmaSecret interface{}, validUntil int64) (string, apierrors.ApiError) {
+func (s *TokenRepository) GenerateAndAddToken(userid string, validUntil int64) (string, apierrors.ApiError) {
 
 	tokenID := cuid.New()
-	token := &models.Token{ID: tokenID, Active: true, UserID: userid}
+	tokenString := GenerateToken()
+	token := &models.Token{ID: tokenID, Active: true, UserID: userid, Token: tokenString, ValidUntil: validUntil}
 	if err := s.db.Add(&token); err != nil {
 		return "", err
 	}
-	tokenString, err := GenerateToken(userid, tokenID, hmaSecret, validUntil)
-	if err != nil {
-		return "", apierrors.NewGeneralError(err)
-	}
+
 	return tokenString, nil
 }
 
@@ -89,41 +88,26 @@ func (s *TokenRepository) DeleteByID(id string) apierrors.ApiError {
 	}
 	return nil
 }
-func GenerateToken(userid string, id string, hmacSecret interface{}, validUntil int64) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userid":         userid,
-		"generationdate": time.Now().Unix(),
-		"validuntil":     validUntil,
-		"id":             id,
-	})
-
-	tokenString, err := token.SignedString(hmacSecret)
-	if err != nil {
-		return "", err
+func GenerateToken() string {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-"
+	ret := make([]byte, DEFAULT_TOKEN_LENGTH)
+	for i := 0; i < DEFAULT_TOKEN_LENGTH; i++ {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(letters))))
+		if err != nil {
+			fmt.Println(err)
+			return ""
+		}
+		ret[i] = letters[num.Int64()]
 	}
-	return tokenString, nil
+
+	return string(ret)
 }
 
-func Parse(tokenString string, hmac []byte) (map[string]interface{}, error) {
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return hmac, nil
-	})
-	if err != nil {
-		return nil, err
+func (s *TokenRepository) GetUserIDByToken(token string) (string, apierrors.ApiError) {
+	var object models.Token
+	if err := s.db.FindByWhere(&object, "token = ?", []interface{}{token}); err != nil {
+		return "", err
 	}
+	return object.UserID, nil
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		return nil, errors.New("token invalid")
-	}
-	parsedData := map[string]interface{}{}
-	parsedData["userid"] = claims["userid"]
-	parsedData["generationdate"] = claims["generationdate"]
-	parsedData["validuntil"] = claims["validuntil"]
-	parsedData["id"] = claims["id"]
-	return parsedData, nil
 }

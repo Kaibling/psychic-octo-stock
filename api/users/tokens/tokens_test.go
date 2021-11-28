@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/Kaibling/psychic-octo-stock/api"
-	"github.com/Kaibling/psychic-octo-stock/lib/config"
 	"github.com/Kaibling/psychic-octo-stock/models"
 	"github.com/Kaibling/psychic-octo-stock/repositories"
 	"github.com/stretchr/testify/assert"
@@ -62,10 +61,9 @@ func TestGetAllTokens(t *testing.T) {
 
 	tokenRepo := repos["tokenRepo"].(*repositories.TokenRepository)
 
-	hmac := []byte(config.Config.TokenSecret)
-	token1, err := tokenRepo.GenerateAndAddToken(testUser.ID, hmac, 0)
+	token1, err := tokenRepo.GenerateAndAddToken(testUser.ID, 0)
 	assert.Nil(t, err)
-	token2, err := tokenRepo.GenerateAndAddToken(testUser.ID, hmac, 123456)
+	token2, err := tokenRepo.GenerateAndAddToken(testUser.ID, 123456)
 	assert.Nil(t, err)
 
 	w := performTestRequest(r, "GET", URL+"/"+testUser.ID+"/tokens", nil, nil)
@@ -76,17 +74,15 @@ func TestGetAllTokens(t *testing.T) {
 	reponseObjects, ok := value.([]interface{})
 	assert.True(t, ok)
 
-	tokenData1, _ := repositories.Parse(token1, hmac)
 	object1 := reponseObjects[0].(map[string]interface{})
 	assert.Equal(t, object1["user_id"], testUser.ID)
-	assert.Equal(t, object1["user_id"], tokenData1["userid"])
-	assert.Equal(t, float64(0), tokenData1["validuntil"])
+	assert.Equal(t, object1["token"], token1)
+	assert.Equal(t, float64(0), object1["valid_until"])
 
-	tokenData2, _ := repositories.Parse(token2, hmac)
 	object2 := reponseObjects[1].(map[string]interface{})
 	assert.Equal(t, object2["user_id"], testUser.ID)
-	assert.Equal(t, object2["user_id"], tokenData2["userid"])
-	assert.Equal(t, float64(123456), tokenData2["validuntil"])
+	assert.Equal(t, object2["token"], token2)
+	assert.Equal(t, float64(123456), object2["valid_until"])
 
 }
 
@@ -97,8 +93,7 @@ func TestDeleteToken(t *testing.T) {
 	userRepo.Add(testUser)
 
 	tokenRepo := repos["tokenRepo"].(*repositories.TokenRepository)
-	hmac := []byte(config.Config.TokenSecret)
-	_, err := tokenRepo.GenerateAndAddToken(testUser.ID, hmac, 123456)
+	_, err := tokenRepo.GenerateAndAddToken(testUser.ID, 123456)
 	assert.Nil(t, err)
 
 	w := performTestRequest(r, "GET", URL+"/"+testUser.ID+"/tokens", nil, nil)
@@ -134,8 +129,7 @@ func TestPutToken(t *testing.T) {
 
 	tokenRepo := repos["tokenRepo"].(*repositories.TokenRepository)
 
-	hmac := []byte(config.Config.TokenSecret)
-	_, err := tokenRepo.GenerateAndAddToken(testUser.ID, hmac, 123456)
+	token, err := tokenRepo.GenerateAndAddToken(testUser.ID, 123456)
 	assert.Nil(t, err)
 
 	w := performTestRequest(r, "GET", URL+"/"+testUser.ID+"/tokens", nil, nil)
@@ -145,11 +139,12 @@ func TestPutToken(t *testing.T) {
 	value := Response["data"]
 	reponseObjects, ok := value.([]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, len(reponseObjects), 1)
 
-	object1 := reponseObjects[0].(map[string]interface{})
-	assert.Equal(t, object1["user_id"], testUser.ID)
-	tokenID := object1["ID"].(string)
+	responseToken1 := reponseObjects[0].(map[string]interface{})
+	assert.Equal(t, len(reponseObjects), 1)
+	assert.Equal(t, token, responseToken1["token"].(string))
+	assert.Equal(t, testUser.ID, responseToken1["user_id"].(string))
+	tokenID := responseToken1["ID"].(string)
 
 	updateToken := map[string]interface{}{
 		"comment": "testcomment",
@@ -166,6 +161,6 @@ func TestPutToken(t *testing.T) {
 	assert.True(t, exists)
 	reponseupdatedObject, ok := value.(map[string]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, "testcomment", reponseupdatedObject["Comment"])
+	assert.Equal(t, "testcomment", reponseupdatedObject["comment"])
 
 }

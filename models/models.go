@@ -70,13 +70,15 @@ func contains(s []string, e string) bool {
 
 type Token struct {
 	gorm.Model
-	ID      string `gorm:"primaryKey;autoIncrement:false;not null"`
-	Active  bool   `gorm:"active"`
-	Comment string `gorm:"comment"`
-	UserID  string `gorm:"foreignkey:userID;not null" json:"user_id"`
+	ID         string `gorm:"primaryKey;autoIncrement:false;not null"`
+	Active     bool   `json:"active"`
+	Comment    string `json:"comment"`
+	UserID     string `gorm:"foreignkey:userID;not null" json:"user_id"`
+	ValidUntil int64  `json:"valid_until"`
+	Token      string `json:"token"`
 }
 
-var TokenSelect = []string{"ID", "user_id", "comment", "active"}
+var TokenSelect = []string{"ID", "token", "user_id", "valid_until", "comment", "active"}
 
 type MonetaryUnit struct {
 	Amount   float64 `json:"amount"`
