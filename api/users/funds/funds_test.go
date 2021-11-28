@@ -18,23 +18,50 @@ import (
 
 var URL = "/api/v1/users"
 
-func TestGenerateToken(t *testing.T) {
+func TestChargeFund(t *testing.T) {
 	r, repos, performTestRequest := api.TestAssemblyRoute()
 	userRepo := repos["userRepo"].(*repositories.UserRepository)
-	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 1234, Email: "asd.asd@asd.as"}
+	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 200, Email: "asd.asd@asd.as", Currency: "EUR"}
 	userRepo.Add(testUser)
 
-	requestdate := map[string]interface{}{
-		"valid_until": 123456,
+	requestFunds := map[string]interface{}{
+		"Amount":    123,
+		"Currency":  "EUR",
+		"Provider":  "",
+		"Operation": "CHARGE",
 	}
 
-	byteData, _ := json.Marshal(requestdate)
-	w := performTestRequest(r, "POST", URL+"/"+testUser.ID+"/tokens", byteData, nil)
-	assert.Equal(t, http.StatusCreated, w.Code)
+	byteData, _ := json.Marshal(requestFunds)
+	w := performTestRequest(r, "POST", URL+"/"+testUser.ID+"/funds", byteData, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
 	var createResponse map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &createResponse)
 	value := createResponse["data"]
-	reponseToken := value.(string)
-	assert.IsType(t, reponseToken, "string")
+	responseUser := value.(map[string]interface{})
+	assert.Equal(t, float64(323), responseUser["funds"])
+	assert.Equal(t, testUser.Currency, responseUser["currency"])
+}
 
+func TestChargeFundDifferentCUrrency(t *testing.T) {
+	r, repos, performTestRequest := api.TestAssemblyRoute()
+	userRepo := repos["userRepo"].(*repositories.UserRepository)
+	testUser := &models.User{Username: "Jack", Password: "abc123", Funds: 200, Email: "asd.asd@asd.as", Currency: "EUR"}
+	userRepo.Add(testUser)
+
+	requestFunds := map[string]interface{}{
+		"Amount":    123,
+		"Currency":  "AED",
+		"Provider":  "",
+		"Operation": "CHARGE",
+	}
+
+	byteData, _ := json.Marshal(requestFunds)
+	w := performTestRequest(r, "POST", URL+"/"+testUser.ID+"/funds", byteData, nil)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var createResponse map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &createResponse)
+	value := createResponse["data"]
+	responseUser := value.(map[string]interface{})
+	assert.Equal(t, float64(229.1018), responseUser["funds"])
+	assert.Equal(t, testUser.Currency, responseUser["currency"])
 }

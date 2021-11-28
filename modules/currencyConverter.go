@@ -2,8 +2,10 @@ package modules
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
+	"github.com/Kaibling/psychic-octo-stock/lib/apierrors"
 	"github.com/Kaibling/psychic-octo-stock/lib/config"
 	"github.com/Kaibling/psychic-octo-stock/lib/utility"
 	"github.com/Kaibling/psychic-octo-stock/models"
@@ -75,7 +77,16 @@ func (s *CurrencyConverterModule) SupportedCurrency(currency string) bool {
 
 }
 
-func (s *CurrencyConverterModule) AddAndConvertFunds(mu1 models.MonetaryUnit, mu2 models.MonetaryUnit) models.MonetaryUnit {
+func (s *CurrencyConverterModule) AddAndConvertFunds(mu1 *models.MonetaryUnit, mu2 models.MonetaryUnit) apierrors.ApiError {
+	if mu1.Currency == "" {
+		return apierrors.NewGeneralError(errors.New("missing currency for calculation"))
+	}
+	mu2Converted := s.ConvertCurrency(mu2, mu1.Currency)
+	mu1.Amount = mu1.Amount + mu2Converted.Amount
+	return nil
+}
+
+func (s *CurrencyConverterModule) SumAndConvertFunds(mu1 models.MonetaryUnit, mu2 models.MonetaryUnit) models.MonetaryUnit {
 	//if both have the same currency, just add it
 	//if one has the default one, take the default
 	//if nobody has default, convert both to default

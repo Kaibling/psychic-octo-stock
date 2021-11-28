@@ -106,8 +106,8 @@ func (s *UserRepository) AddFunds(userID string, mu models.MonetaryUnit) apierro
 	if err != nil {
 		return err
 	}
-	updatedFunds := modules.CCM.AddAndConvertFunds(*currentFunds, mu)
-	updateUser := map[string]interface{}{"ID": userID, "Funds": updatedFunds}
+	modules.CCM.AddAndConvertFunds(currentFunds, mu)
+	updateUser := map[string]interface{}{"ID": userID, "Funds": currentFunds.Amount}
 
 	if err := s.db.UpdateByMap(models.User{}, updateUser); err != nil {
 		return err

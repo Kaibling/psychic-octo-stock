@@ -36,8 +36,8 @@ func fundsPost(w http.ResponseWriter, r *http.Request) {
 		response.Send("", err.Error(), err.HttpStatus())
 		return
 	}
-
-	response.Send("", "", http.StatusNoContent)
+	loadedUser, _ := userRepo.GetByID(userID)
+	response.Send(loadedUser, "", http.StatusOK)
 }
 
 func executeFundOperation(userID string, data fundsData, userRepo *repositories.UserRepository) apierrors.ApiError {

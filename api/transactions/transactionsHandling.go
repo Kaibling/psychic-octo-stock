@@ -221,7 +221,7 @@ func executeTransaction(transactionID string) error {
 	userRepo := repositories.UserRepo
 	seller, _ := userRepo.GetByID(loadedTransaction.SellerID)
 	sellerMu := &models.MonetaryUnit{Amount: seller.Funds, Currency: seller.Currency}
-	newSellerFunds := modules.CCM.AddAndConvertFunds(*sellerMu, *transactionCost)
+	newSellerFunds := modules.CCM.SumAndConvertFunds(*sellerMu, *transactionCost)
 	newSellerFundsConverted := modules.CCM.ConvertCurrency(newSellerFunds, sellerMu.Currency)
 
 	atomicExecutionArray := []interface{}{}
